@@ -23,6 +23,7 @@ class MRJobTask(luigi.Task):
     misc_options = {}
 
     def run_inline(self, job):
+        print 'gothereherhhe', self
         stdin = StringIO()
         inlines = self.input()
         inlines = flatten(inlines)
@@ -39,7 +40,6 @@ class MRJobTask(luigi.Task):
                     results.append((key, value))
                 else:
                     results.append(line)
-
         return results
 
     def run_emr(self, job):
@@ -80,7 +80,7 @@ class MRJobTask(luigi.Task):
         logger.info('Finished running mrjob')
 
     def complete(self):
-        return (self.job_results or self.s3_output_path) is not None
+        return self.job_results is not None or self.s3_output_path is not None
 
     def output(self):
         runner = self.job_options['runner']
