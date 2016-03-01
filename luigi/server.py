@@ -270,6 +270,9 @@ def run(api_port=8082, address=None, unix_socket=None, scheduler=None, responder
     pruner = tornado.ioloop.PeriodicCallback(scheduler.prune, 60000)
     pruner.start()
 
+    cron_scheduler = tornado.ioloop.PeriodicCallback(scheduler.schedule_cron, 10000)
+    cron_scheduler.start()
+
     def shutdown_handler(signum, frame):
         exit_handler()
         sys.exit(0)

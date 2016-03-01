@@ -26,12 +26,17 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+import datetime
 import functools
+import hashlib
 import itertools
+import json
 import logging
 import os
 import re
 import time
+
+from croniter import croniter
 
 from luigi import six
 
@@ -40,7 +45,7 @@ from luigi import notifications
 from luigi import parameter
 from luigi import task_history as history
 from luigi.task_status import DISABLED, DONE, FAILED, PENDING, RUNNING, SUSPENDED, UNKNOWN
-from luigi.task import Config
+from luigi.task import Config, task_id_str
 
 logger = logging.getLogger("luigi.server")
 
@@ -519,6 +524,45 @@ class CentralPlannerScheduler(Scheduler):
             disable_hard_timeout=self._config.disable_hard_timeout,
             disable_window=self._config.disable_window)
         self._worker_requests = {}
+        self._cron_schedules = self._get_cron_schedules()
+
+    def _get_cron_schedules(self):
+        crontab = configuration.get_config().get('cron', 'crontab', None)
+        if crontab is None:
+            return {}
+
+        logger.info('Reading crontab from {}'.format(crontab))
+
+        schedules = {}
+        with open(crontab) as crontab_f:
+            for line in crontab_f:
+                expr, task_cls = [arg.strip() for arg in line.strip().rsplit(None, 1)]
+                schedules[task_cls] = croniter(expr, datetime.datetime.now())
+                logger.info('Found schedule for {} to be run next at {}'
+                            .format(task_cls, schedules[task_cls].get_next(datetime.datetime)))
+        return schedules
+
+    def schedule_cron(self):
+        logger.info('Checking for cron tasks')
+        for task_cls, schedule in self._cron_schedules.items():
+            if schedule.get_current(datetime.datetime) < datetime.datetime.now():
+                logger.info('Task {} is due'.format(task_cls))
+
+                assistant = next((w for w in self._state.get_active_workers()
+                                  if w.assistant), None)
+                if assistant is None:
+                    logger.warning('No assistants available to run {}'.format(task_cls))
+                    continue
+
+                params = {'date_minute': parameter.DateMinuteParameter().serialize(datetime.datetime.now())}
+                task_id = task_id_str(task_cls, params)
+
+                logger.info('Cron adding task {} with assistant {}'
+                            .format(task_cls, assistant.id))
+                # Add with an arbitrary assistant so that we don't create any additional stakeholders
+                self.add_task(task_id, family=task_cls, worker=assistant.id, params=params)
+                while self._cron_schedules[task_cls].get_next(datetime.datetime) < datetime.datetime.now():
+                    pass
 
     def load(self):
         self._state.load()
