@@ -17,11 +17,11 @@
 
 from helpers import unittest
 
-import luigi
+import luigi1
 import namespace_test_helper  # declares another Foo in namespace mynamespace
 
 
-class Foo(luigi.Task):
+class Foo(luigi1.Task):
     pass
 
 

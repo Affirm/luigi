@@ -17,12 +17,12 @@
 
 from helpers import unittest
 import os
-import luigi
-import luigi.hdfs
-from luigi import six
-from luigi.mock import MockTarget
+import luigi1
+import luigi1.hdfs
+from luigi1 import six
+from luigi1.mock import MockTarget
 from helpers import with_config
-from luigi.contrib.spark import SparkJobError, SparkSubmitTask, PySparkTask, PySpark1xJob, Spark1xJob, SparkJob
+from luigi1.contrib.spark import SparkJobError, SparkSubmitTask, PySparkTask, PySpark1xJob, Spark1xJob, SparkJob
 from mock import patch, MagicMock
 
 BytesIO = six.BytesIO
@@ -68,14 +68,14 @@ class TestSparkSubmitTask(SparkSubmitTask):
         return ["arg1", "arg2"]
 
     def output(self):
-        return luigi.LocalTarget('output')
+        return luigi1.LocalTarget('output')
 
 
 class TestDefaultSparkSubmitTask(SparkSubmitTask):
     app = 'test.py'
 
     def output(self):
-        return luigi.LocalTarget('output')
+        return luigi1.LocalTarget('output')
 
 
 class TestPySparkTask(PySparkTask):
@@ -90,10 +90,10 @@ class TestPySparkTask(PySparkTask):
         sc.textFile(self.input().path).saveAsTextFile(self.output().path)
 
 
-class HdfsJob(luigi.ExternalTask):
+class HdfsJob(luigi1.ExternalTask):
 
     def output(self):
-        return luigi.hdfs.HdfsTarget('test')
+        return luigi1.hdfs.HdfsTarget('test')
 
 
 class TestSparkJob(SparkJob):
@@ -112,7 +112,7 @@ class TestSparkJob(SparkJob):
         return 'job_class'
 
     def output(self):
-        return luigi.LocalTarget('output')
+        return luigi1.LocalTarget('output')
 
 
 class TestSpark1xJob(Spark1xJob):
@@ -124,7 +124,7 @@ class TestSpark1xJob(Spark1xJob):
         return 'job_class'
 
     def output(self):
-        return luigi.LocalTarget('output')
+        return luigi1.LocalTarget('output')
 
 
 class TestPySpark1xJob(PySpark1xJob):
@@ -133,7 +133,7 @@ class TestPySpark1xJob(PySpark1xJob):
         return 'python_file'
 
     def output(self):
-        return luigi.LocalTarget('output')
+        return luigi1.LocalTarget('output')
 
 
 class SparkSubmitTaskTest(unittest.TestCase):
@@ -223,7 +223,7 @@ class PySparkTaskTest(unittest.TestCase):
         sc = spark_context.return_value.__enter__.return_value
 
         def mock_spark_submit(task):
-            from luigi.contrib.pyspark_runner import main
+            from luigi1.contrib.pyspark_runner import main
             main(*task.app_command()[1:])
             # Check py-package exists
             self.assertTrue(os.path.exists(sc.addPyFile.call_args[0][0]))

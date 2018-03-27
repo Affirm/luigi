@@ -18,13 +18,13 @@
 import logging
 from helpers import unittest
 
-import luigi.notifications
-import luigi.worker
-from luigi import Parameter, RemoteScheduler, Task
-from luigi.worker import Worker
+import luigi1.notifications
+import luigi1.worker
+from luigi1 import Parameter, RemoteScheduler, Task
+from luigi1.worker import Worker
 from mock import Mock
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
 class DummyTask(Task):

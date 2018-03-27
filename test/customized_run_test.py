@@ -19,15 +19,15 @@ import logging
 import time
 from helpers import unittest
 
-import luigi
-import luigi.hadoop
-import luigi.rpc
-import luigi.scheduler
-import luigi.worker
+import luigi1
+import luigi1.hadoop
+import luigi1.rpc
+import luigi1.scheduler
+import luigi1.worker
 
 
-class DummyTask(luigi.Task):
-    n = luigi.Parameter()
+class DummyTask(luigi1.Task):
+    n = luigi1.Parameter()
 
     def __init__(self, *args, **kwargs):
         super(DummyTask, self).__init__(*args, **kwargs)
@@ -41,7 +41,7 @@ class DummyTask(luigi.Task):
         self.has_run = True
 
 
-class CustomizedLocalScheduler(luigi.scheduler.CentralPlannerScheduler):
+class CustomizedLocalScheduler(luigi1.scheduler.CentralPlannerScheduler):
 
     def __init__(self, *args, **kwargs):
         super(CustomizedLocalScheduler, self).__init__(*args, **kwargs)
@@ -56,7 +56,7 @@ class CustomizedLocalScheduler(luigi.scheduler.CentralPlannerScheduler):
         return self.has_run
 
 
-class CustomizedRemoteScheduler(luigi.rpc.RemoteScheduler):
+class CustomizedRemoteScheduler(luigi1.rpc.RemoteScheduler):
 
     def __init__(self, *args, **kwargs):
         super(CustomizedRemoteScheduler, self).__init__(*args, **kwargs)
@@ -71,7 +71,7 @@ class CustomizedRemoteScheduler(luigi.rpc.RemoteScheduler):
         return self.has_run
 
 
-class CustomizedWorker(luigi.worker.Worker):
+class CustomizedWorker(luigi1.worker.Worker):
 
     def __init__(self, *args, **kwargs):
         super(CustomizedWorker, self).__init__(*args, **kwargs)
@@ -120,13 +120,13 @@ class CustomizedWorkerTest(unittest.TestCase):
         a = DummyTask(3)
         self.assertFalse(a.complete())
         self.assertFalse(self.worker_scheduler_factory.worker.complete())
-        luigi.build([a], worker_scheduler_factory=self.worker_scheduler_factory)
+        luigi1.build([a], worker_scheduler_factory=self.worker_scheduler_factory)
         self.assertTrue(a.complete())
         self.assertTrue(self.worker_scheduler_factory.worker.complete())
 
     def test_cmdline_custom_worker(self):
         self.assertFalse(self.worker_scheduler_factory.worker.complete())
-        luigi.run(['DummyTask', '--n', '4'], worker_scheduler_factory=self.worker_scheduler_factory)
+        luigi1.run(['DummyTask', '--n', '4'], worker_scheduler_factory=self.worker_scheduler_factory)
         self.assertTrue(self.worker_scheduler_factory.worker.complete())
 
 if __name__ == '__main__':

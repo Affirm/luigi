@@ -18,15 +18,15 @@
 import subprocess
 import tempfile
 
-import luigi
+import luigi1
 from helpers import with_config, unittest
-from luigi.contrib.pig import PigJobError, PigJobTask
+from luigi1.contrib.pig import PigJobError, PigJobTask
 from mock import patch
 
 
 class SimpleTestJob(PigJobTask):
     def output(self):
-        return luigi.LocalTarget('simple-output')
+        return luigi1.LocalTarget('simple-output')
 
     def pig_script_path(self):
         return "my_simple_pig_script.pig"
@@ -34,7 +34,7 @@ class SimpleTestJob(PigJobTask):
 
 class ComplexTestJob(PigJobTask):
     def output(self):
-        return luigi.LocalTarget('complex-output')
+        return luigi1.LocalTarget('complex-output')
 
     def pig_script_path(self):
         return "my_complex_pig_script.pig"

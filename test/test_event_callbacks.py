@@ -18,10 +18,10 @@
 import random
 from helpers import unittest
 
-import luigi
-from luigi import Event, Task, build
-from luigi.mock import MockTarget, MockFileSystem
-from luigi.task import flatten
+import luigi1
+from luigi1 import Event, Task, build
+from luigi1.mock import MockTarget, MockFileSystem
+from luigi1.task import flatten
 from mock import patch
 
 
@@ -30,7 +30,7 @@ class DummyException(Exception):
 
 
 class EmptyTask(Task):
-    fail = luigi.BoolParameter()
+    fail = luigi1.BoolParameter()
 
     def run(self):
         if self.fail:
@@ -128,7 +128,7 @@ class ConsistentMockOutput(object):
     '''
     Computes output location and contents from the task and its parameters. Rids us of writing ad-hoc boilerplate output() et al.
     '''
-    param = luigi.IntParameter(default=1)
+    param = luigi1.IntParameter(default=1)
 
     def output(self):
         return MockTarget('/%s/%u' % (self.__class__.__name__, self.param))
@@ -138,7 +138,7 @@ class ConsistentMockOutput(object):
             o.write(repr([self.task_id] + sorted([eval_contents(i) for i in flatten(self.input())])))
 
 
-class HappyTestFriend(ConsistentMockOutput, luigi.Task):
+class HappyTestFriend(ConsistentMockOutput, luigi1.Task):
 
     '''
     Does trivial "work", outputting the list of inputs. Results in a convenient lispy comparable.
@@ -148,7 +148,7 @@ class HappyTestFriend(ConsistentMockOutput, luigi.Task):
         self.produce_output()
 
 
-class D(ConsistentMockOutput, luigi.ExternalTask):
+class D(ConsistentMockOutput, luigi1.ExternalTask):
     pass
 
 
@@ -179,15 +179,15 @@ class TestDependencyEvents(unittest.TestCase):
         actual_events = {}
 
         # yucky to create separate callbacks; would be nicer if the callback received an instance of a subclass of Event, so one callback could accumulate all types
-        @luigi.Task.event_handler(Event.DEPENDENCY_DISCOVERED)
+        @luigi1.Task.event_handler(Event.DEPENDENCY_DISCOVERED)
         def callback_dependency_discovered(*args):
             actual_events.setdefault(Event.DEPENDENCY_DISCOVERED, set()).add(tuple(map(lambda t: t.task_id, args)))
 
-        @luigi.Task.event_handler(Event.DEPENDENCY_MISSING)
+        @luigi1.Task.event_handler(Event.DEPENDENCY_MISSING)
         def callback_dependency_missing(*args):
             actual_events.setdefault(Event.DEPENDENCY_MISSING, set()).add(tuple(map(lambda t: t.task_id, args)))
 
-        @luigi.Task.event_handler(Event.DEPENDENCY_PRESENT)
+        @luigi1.Task.event_handler(Event.DEPENDENCY_PRESENT)
         def callback_dependency_present(*args):
             actual_events.setdefault(Event.DEPENDENCY_PRESENT, set()).add(tuple(map(lambda t: t.task_id, args)))
 

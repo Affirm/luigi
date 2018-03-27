@@ -17,14 +17,14 @@
 
 from helpers import unittest
 
-import luigi
-import luigi.date_interval
-import luigi.notifications
-from luigi.interface import core, Interface, WorkerSchedulerFactory
-from luigi.worker import Worker
+import luigi1
+import luigi1.date_interval
+import luigi1.notifications
+from luigi1.interface import core, Interface, WorkerSchedulerFactory
+from luigi1.worker import Worker
 from mock import Mock
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
 class InterfaceTest(unittest.TestCase):
@@ -37,8 +37,8 @@ class InterfaceTest(unittest.TestCase):
         self.worker_scheduler_factory.create_worker = Mock(return_value=self.worker)
         self.worker_scheduler_factory.create_local_scheduler = Mock()
 
-        class NoOpTask(luigi.Task):
-            param = luigi.Parameter()
+        class NoOpTask(luigi1.Task):
+            param = luigi1.Parameter()
 
         self.task_a = NoOpTask("a")
         self.task_b = NoOpTask("b")

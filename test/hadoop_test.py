@@ -19,39 +19,39 @@ import os
 import sys
 import unittest
 
-import luigi
-import luigi.format
-import luigi.hadoop
-import luigi.hdfs
-import luigi.mrrunner
-import luigi.notifications
+import luigi1
+import luigi1.format
+import luigi1.hadoop
+import luigi1.hdfs
+import luigi1.mrrunner
+import luigi1.notifications
 import minicluster
 import mock
-from luigi.mock import MockTarget
+from luigi1.mock import MockTarget
 from nose.plugins.attrib import attr
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
-luigi.hadoop.attach(minicluster)
+luigi1.hadoop.attach(minicluster)
 
 
-class OutputMixin(luigi.Task):
-    use_hdfs = luigi.BoolParameter(default=False)
+class OutputMixin(luigi1.Task):
+    use_hdfs = luigi1.BoolParameter(default=False)
 
     def get_output(self, fn):
         if self.use_hdfs:
-            return luigi.hdfs.HdfsTarget('/tmp/' + fn, format=luigi.format.get_default_format() >> luigi.hdfs.PlainDir)
+            return luigi1.hdfs.HdfsTarget('/tmp/' + fn, format=luigi1.format.get_default_format() >> luigi1.hdfs.PlainDir)
         else:
             return MockTarget(fn)
 
 
-class HadoopJobTask(luigi.hadoop.JobTask, OutputMixin):
+class HadoopJobTask(luigi1.hadoop.JobTask, OutputMixin):
 
     def job_runner(self):
         if self.use_hdfs:
             return minicluster.MiniClusterHadoopJobRunner()
         else:
-            return luigi.hadoop.LocalJobRunner()
+            return luigi1.hadoop.LocalJobRunner()
 
 
 class Words(OutputMixin):
@@ -160,8 +160,8 @@ class FailingJob(HadoopJobTask):
         return self.get_output('failing')
 
 
-class MyStreamingJob(luigi.hadoop.JobTask):
-    param = luigi.Parameter()
+class MyStreamingJob(luigi1.hadoop.JobTask):
+    param = luigi1.Parameter()
 
 
 def read_wordcount_output(p):
@@ -177,21 +177,21 @@ class CommonTests(object):
     @staticmethod
     def test_run(test_case):
         job = WordCountJob(use_hdfs=test_case.use_hdfs)
-        luigi.build([job], local_scheduler=True)
+        luigi1.build([job], local_scheduler=True)
         c = read_wordcount_output(job.output())
         test_case.assertEqual(int(c['jk']), 6)
 
     @staticmethod
     def test_run_2(test_case):
         job = WordFreqJob(use_hdfs=test_case.use_hdfs)
-        luigi.build([job], local_scheduler=True)
+        luigi1.build([job], local_scheduler=True)
         c = read_wordcount_output(job.output())
         test_case.assertAlmostEquals(float(c['jk']), 6.0 / 33.0)
 
     @staticmethod
     def test_map_only(test_case):
         job = MapOnlyJob(use_hdfs=test_case.use_hdfs)
-        luigi.build([job], local_scheduler=True)
+        luigi1.build([job], local_scheduler=True)
         c = []
         for line in job.output().open('r'):
             c.append(line.strip())
@@ -201,7 +201,7 @@ class CommonTests(object):
     @staticmethod
     def test_unicode_job(test_case):
         job = UnicodeJob(use_hdfs=test_case.use_hdfs)
-        luigi.build([job], local_scheduler=True)
+        luigi1.build([job], local_scheduler=True)
         c = []
         for line in job.output().open('r'):
             c.append(line)
@@ -215,7 +215,7 @@ class CommonTests(object):
     def test_failing_job(test_case):
         job = FailingJob(use_hdfs=test_case.use_hdfs)
 
-        success = luigi.build([job], local_scheduler=True)
+        success = luigi1.build([job], local_scheduler=True)
         test_case.assertFalse(success)
 
 
@@ -298,43 +298,43 @@ class CreatePackagesArchive(unittest.TestCase):
     @mock.patch('tarfile.open')
     def test_create_packages_archive_module(self, tar):
         module = __import__("module", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([module], '/dev/null')
+        luigi1.hadoop.create_packages_archive([module], '/dev/null')
         self._assert_module(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package(self, tar):
         package = __import__("package", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package], '/dev/null')
         self._assert_package(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package_submodule(self, tar):
         package_submodule = __import__("package.submodule", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package_submodule], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package_submodule], '/dev/null')
         self._assert_package(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package_submodule_with_absolute_import(self, tar):
         package_submodule_with_absolute_import = __import__("package.submodule_with_absolute_import", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package_submodule_with_absolute_import], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package_submodule_with_absolute_import], '/dev/null')
         self._assert_package(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package_submodule_without_imports(self, tar):
         package_submodule_without_imports = __import__("package.submodule_without_imports", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package_submodule_without_imports], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package_submodule_without_imports], '/dev/null')
         self._assert_package(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package_subpackage(self, tar):
         package_subpackage = __import__("package.subpackage", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package_subpackage], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package_subpackage], '/dev/null')
         self._assert_package_subpackage(tar.return_value.add)
 
     @mock.patch('tarfile.open')
     def test_create_packages_archive_package_subpackage_submodule(self, tar):
         package_subpackage_submodule = __import__("package.subpackage.submodule", None, None, 'dummy')
-        luigi.hadoop.create_packages_archive([package_subpackage_submodule], '/dev/null')
+        luigi1.hadoop.create_packages_archive([package_subpackage_submodule], '/dev/null')
         self._assert_package_subpackage(tar.return_value.add)
 
 

@@ -42,6 +42,126 @@ parameters of the same values are not just equal, but the same instance:
 
 .. code:: python
 
+    >>> import luigi1
+    >>> import datetime
+    >>> class DateTask(luigi.Task):
+    ...   date = luigi.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
+    >>> import luigi1
+    >>> import datetime
+    >>> class DateTask(luigi.Task):
+    ...   date = luigi.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
+    >>> import luigi
+    >>> import datetime
+    >>> class DateTask(luigi1.Task):
+    ...   date = luigi.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
+    >>> import luigi
+    >>> import datetime
+    >>> class DateTask(luigi1.Task):
+    ...   date = luigi.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
+    >>> import luigi
+    >>> import datetime
+    >>> class DateTask(luigi.Task):
+    ...   date = luigi1.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
+    >>> import luigi
+    >>> import datetime
+    >>> class DateTask(luigi.Task):
+    ...   date = luigi1.DateParameter()
+    ...
+    >>> a = datetime.date(2014, 1, 21)
+    >>> b = datetime.date(2014, 1, 21)
+    >>> a is b
+    False
+    >>> c = DateTask(date=a)
+    >>> d = DateTask(date=b)
+    >>> c
+    DateTask(date=2014-01-21)
+    >>> d
+    DateTask(date=2014-01-21)
+    >>> c is d
+    True
+
+
+
     >>> import luigi
     >>> import datetime
     >>> class DateTask(luigi.Task):

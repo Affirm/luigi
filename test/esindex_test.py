@@ -37,9 +37,9 @@ import os
 from helpers import unittest
 
 import elasticsearch
-import luigi
+import luigi1
 from elasticsearch.connection import Urllib3HttpConnection
-from luigi.contrib.esindex import CopyToIndex, ElasticsearchTarget
+from luigi1.contrib.esindex import CopyToIndex, ElasticsearchTarget
 
 HOST = os.getenv('ESINDEX_TEST_HOST', 'localhost')
 PORT = os.getenv('ESINDEX_TEST_PORT', 9200)
@@ -177,7 +177,7 @@ class CopyToIndexTest(unittest.TestCase):
         task = IndexingTask1()
         self.assertFalse(self.es.indices.exists(task.index))
         self.assertFalse(task.complete())
-        luigi.build([task], local_scheduler=True)
+        luigi1.build([task], local_scheduler=True)
         self.assertTrue(self.es.indices.exists(task.index))
         self.assertTrue(task.complete())
         self.assertEqual(1, self.es.count(index=task.index).get('count'))
@@ -193,7 +193,7 @@ class CopyToIndexTest(unittest.TestCase):
         self.assertFalse(self.es.indices.exists(task2.index))
         self.assertFalse(task1.complete())
         self.assertFalse(task2.complete())
-        luigi.build([task1, task2], local_scheduler=True)
+        luigi1.build([task1, task2], local_scheduler=True)
         self.assertTrue(self.es.indices.exists(task1.index))
         self.assertTrue(self.es.indices.exists(task2.index))
         self.assertTrue(task1.complete())
@@ -214,8 +214,8 @@ class CopyToIndexTest(unittest.TestCase):
         task1 = IndexingTask1()
         task2 = IndexingTask2()
         task3 = IndexingTask3()
-        luigi.build([task1, task2], local_scheduler=True)
-        luigi.build([task3], local_scheduler=True)
+        luigi1.build([task1, task2], local_scheduler=True)
+        luigi1.build([task3], local_scheduler=True)
         self.assertTrue(self.es.indices.exists(task3.index))
         self.assertTrue(task3.complete())
         self.assertEqual(1, self.es.count(index=task3.index).get('count'))
@@ -250,7 +250,7 @@ class MarkerIndexTest(unittest.TestCase):
         self.assertRaises(elasticsearch.NotFoundError, will_raise)
 
         task1 = IndexingTask1()
-        luigi.build([task1], local_scheduler=True)
+        luigi1.build([task1], local_scheduler=True)
 
         result = self.es.count(index=MARKER_INDEX, doc_type=MARKER_DOC_TYPE,
                                body={'query': {'match_all': {}}})
@@ -265,7 +265,7 @@ class MarkerIndexTest(unittest.TestCase):
         self.assertTrue('date' in marker_doc)
 
         task2 = IndexingTask2()
-        luigi.build([task2], local_scheduler=True)
+        luigi1.build([task2], local_scheduler=True)
 
         result = self.es.count(index=MARKER_INDEX, doc_type=MARKER_DOC_TYPE,
                                body={'query': {'match_all': {}}})
@@ -293,7 +293,7 @@ class MarkerIndexTest(unittest.TestCase):
 class IndexingTask4(CopyToTestIndex):
 
     """ Just another task. """
-    date = luigi.DateParameter(default=datetime.date(1970, 1, 1))
+    date = luigi1.DateParameter(default=datetime.date(1970, 1, 1))
     marker_index_hist_size = 1
 
     def docs(self):
@@ -319,13 +319,13 @@ class IndexHistSizeTest(unittest.TestCase):
     def test_limited_history(self):
 
         task4_1 = IndexingTask4(date=datetime.date(2000, 1, 1))
-        luigi.build([task4_1], local_scheduler=True)
+        luigi1.build([task4_1], local_scheduler=True)
 
         task4_2 = IndexingTask4(date=datetime.date(2001, 1, 1))
-        luigi.build([task4_2], local_scheduler=True)
+        luigi1.build([task4_2], local_scheduler=True)
 
         task4_3 = IndexingTask4(date=datetime.date(2002, 1, 1))
-        luigi.build([task4_3], local_scheduler=True)
+        luigi1.build([task4_3], local_scheduler=True)
 
         result = self.es.count(index=MARKER_INDEX, doc_type=MARKER_DOC_TYPE,
                                body={'query': {'match_all': {}}})

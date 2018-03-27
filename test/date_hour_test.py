@@ -18,26 +18,26 @@
 import datetime
 from helpers import unittest
 
-import luigi
-import luigi.interface
+import luigi1
+import luigi1.interface
 
 
-class DateHourTask(luigi.Task):
-    dh = luigi.DateHourParameter()
+class DateHourTask(luigi1.Task):
+    dh = luigi1.DateHourParameter()
 
 
 class DateHourTest(unittest.TestCase):
 
     def test_parse(self):
-        dh = luigi.DateHourParameter().parse('2013-01-01T18')
+        dh = luigi1.DateHourParameter().parse('2013-01-01T18')
         self.assertEqual(dh, datetime.datetime(2013, 1, 1, 18, 0, 0))
 
     def test_serialize(self):
-        dh = luigi.DateHourParameter().serialize(datetime.datetime(2013, 1, 1, 18, 0, 0))
+        dh = luigi1.DateHourParameter().serialize(datetime.datetime(2013, 1, 1, 18, 0, 0))
         self.assertEqual(dh, '2013-01-01T18')
 
     def test_parse_interface(self):
-        task = luigi.interface.ArgParseInterface().parse(["DateHourTask", "--dh", "2013-01-01T18"])[0]
+        task = luigi1.interface.ArgParseInterface().parse(["DateHourTask", "--dh", "2013-01-01T18"])[0]
         self.assertEqual(task.dh, datetime.datetime(2013, 1, 1, 18, 0, 0))
 
     def test_serialize_task(self):

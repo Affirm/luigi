@@ -24,12 +24,12 @@ import shutil
 import tempfile
 import unittest
 
-from luigi import six
+from luigi1 import six
 
-import luigi
+import luigi1
 import sqlalchemy
-from luigi.contrib import sqla
-from luigi.mock import MockFile
+from luigi1.contrib import sqla
+from luigi1.mock import MockFile
 from nose.plugins.attrib import attr
 
 if six.PY3:
@@ -44,7 +44,7 @@ CONNECTION_STRING = "sqlite:///%s" % SQLITEPATH
 TASK_LIST = ["item%d\tproperty%d\n" % (i, i) for i in range(10)]
 
 
-class BaseTask(luigi.Task):
+class BaseTask(luigi1.Task):
 
     def output(self):
         return MockFile("BaseTask", mirror_on_stderr=True)
@@ -151,7 +151,7 @@ class TestSQLA(unittest.TestCase):
 
     def test_rows(self):
         task, task0 = SQLATask(), BaseTask()
-        luigi.build([task, task0], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task, task0], local_scheduler=True, workers=self.NUM_WORKERS)
 
         for i, row in enumerate(task.rows()):
             given = TASK_LIST[i].strip("\n").split("\t")
@@ -165,11 +165,11 @@ class TestSQLA(unittest.TestCase):
         """
         task, task0 = SQLATask(), BaseTask()
         self.engine = sqlalchemy.create_engine(task.connection_string)
-        luigi.build([task0, task], local_scheduler=True)
+        luigi1.build([task0, task], local_scheduler=True)
         self._check_entries(self.engine)
 
         # rerun and the num entries should be the same
-        luigi.build([task0, task], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task0, task], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_run_with_chunk_size(self):
@@ -180,7 +180,7 @@ class TestSQLA(unittest.TestCase):
         task, task0 = SQLATask(), BaseTask()
         self.engine = sqlalchemy.create_engine(task.connection_string)
         task.chunk_size = 2  # change chunk size and check it runs ok
-        luigi.build([task, task0], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task, task0], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_reflect(self):
@@ -209,7 +209,7 @@ class TestSQLA(unittest.TestCase):
                     yield line.strip("\n").split("\t")
 
         task0, task1, task2 = AnotherSQLATask(), SQLATask(), BaseTask()
-        luigi.build([task0, task1, task2], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task0, task1, task2], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_create_marker_table(self):
@@ -252,7 +252,7 @@ class TestSQLA(unittest.TestCase):
                     yield row
 
         task = SQLARowOverloadTest()
-        luigi.build([task], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_column_row_separator(self):
@@ -260,7 +260,7 @@ class TestSQLA(unittest.TestCase):
         Test alternate column row separator works
         :return:
         """
-        class ModBaseTask(luigi.Task):
+        class ModBaseTask(luigi1.Task):
 
             def output(self):
                 return MockFile("ModBaseTask", mirror_on_stderr=True)
@@ -286,7 +286,7 @@ class TestSQLA(unittest.TestCase):
                 return ModBaseTask()
 
         task1, task2 = ModBaseTask(), ModSQLATask()
-        luigi.build([task1, task2], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task1, task2], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_update_rows_test(self):
@@ -294,7 +294,7 @@ class TestSQLA(unittest.TestCase):
         Overload the copy() method and implement an update action.
         :return:
         """
-        class ModBaseTask(luigi.Task):
+        class ModBaseTask(luigi1.Task):
 
             def output(self):
                 return MockFile("BaseTask", mirror_on_stderr=True)
@@ -338,7 +338,7 @@ class TestSQLA(unittest.TestCase):
 
         # Running only task1, and task2 should fail
         task1, task2, task3 = ModBaseTask(), ModSQLATask(), UpdateSQLATask()
-        luigi.build([task1, task2, task3], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task1, task2, task3], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
     def test_multiple_tasks(self):
@@ -347,8 +347,8 @@ class TestSQLA(unittest.TestCase):
         :return:
         """
         class SmallSQLATask(sqla.CopyToTable):
-            item = luigi.Parameter()
-            property = luigi.Parameter()
+            item = luigi1.Parameter()
+            property = luigi1.Parameter()
             columns = [
                 (["item", sqlalchemy.String(64)], {}),
                 (["property", sqlalchemy.String(64)], {})
@@ -360,14 +360,14 @@ class TestSQLA(unittest.TestCase):
             def rows(self):
                 yield (self.item, self.property)
 
-        class ManyBaseTask(luigi.Task):
+        class ManyBaseTask(luigi1.Task):
             def requires(self):
                 for t in TASK_LIST:
                     item, property = t.strip().split("\t")
                     yield SmallSQLATask(item=item, property=property)
 
         task2 = ManyBaseTask()
-        luigi.build([task2], local_scheduler=True, workers=self.NUM_WORKERS)
+        luigi1.build([task2], local_scheduler=True, workers=self.NUM_WORKERS)
         self._check_entries(self.engine)
 
 

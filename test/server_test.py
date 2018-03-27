@@ -21,9 +21,9 @@ import signal
 import time
 
 from helpers import unittest, with_config
-import luigi.rpc
-import luigi.server
-from luigi.scheduler import CentralPlannerScheduler
+import luigi1.rpc
+import luigi1.server
+from luigi1.scheduler import CentralPlannerScheduler
 
 from tornado.testing import AsyncHTTPTestCase
 
@@ -31,26 +31,26 @@ from tornado.testing import AsyncHTTPTestCase
 class ServerTestBase(AsyncHTTPTestCase):
 
     def get_app(self):
-        return luigi.server.app(CentralPlannerScheduler())
+        return luigi1.server.app(CentralPlannerScheduler())
 
     def setUp(self):
         super(ServerTestBase, self).setUp()
 
-        self._old_fetch = luigi.rpc.RemoteScheduler._fetch
+        self._old_fetch = luigi1.rpc.RemoteScheduler._fetch
 
         def _fetch(obj, url, body, *args, **kwargs):
             response = self.fetch(url, body=body, method='POST')
             if response.code >= 400:
-                raise luigi.rpc.RPCError(
+                raise luigi1.rpc.RPCError(
                     'Errror when connecting to remote scheduler'
                 )
             return response.body.decode('utf-8')
 
-        luigi.rpc.RemoteScheduler._fetch = _fetch
+        luigi1.rpc.RemoteScheduler._fetch = _fetch
 
     def tearDown(self):
         super(ServerTestBase, self).tearDown()
-        luigi.rpc.RemoteScheduler._fetch = self._old_fetch
+        luigi1.rpc.RemoteScheduler._fetch = self._old_fetch
 
 
 class ServerTest(ServerTestBase):
@@ -81,14 +81,14 @@ class ServerTestRun(unittest.TestCase):
 
     @with_config({'scheduler': {'state_path': '/tmp/luigi-test-server-state'}})
     def run_server(self):
-        luigi.server.run(api_port=self._api_port, address='127.0.0.1')
+        luigi1.server.run(api_port=self._api_port, address='127.0.0.1')
 
     def start_server(self):
         self._api_port = random.randint(1024, 9999)
         self._process = multiprocessing.Process(target=self.run_server)
         self._process.start()
         time.sleep(0.1)  # wait for server to start
-        self.sch = luigi.rpc.RemoteScheduler(host='localhost', port=self._api_port)
+        self.sch = luigi1.rpc.RemoteScheduler(host='localhost', port=self._api_port)
         self.sch._wait = lambda: None
 
     def stop_server(self):
@@ -115,7 +115,7 @@ class ServerTestRun(unittest.TestCase):
         self.sch._request('/api/ping', {'worker': 'xyz', 'foo': 'bar'})
 
     def test_404(self):
-        with self.assertRaises(luigi.rpc.RPCError):
+        with self.assertRaises(luigi1.rpc.RPCError):
             self.sch._request('/api/fdsfds', {'dummy': 1})
 
     def test_save_state(self):

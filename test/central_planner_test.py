@@ -18,10 +18,10 @@
 import time
 from helpers import unittest
 
-import luigi.notifications
-from luigi.scheduler import DISABLED, DONE, FAILED, CentralPlannerScheduler
+import luigi1.notifications
+from luigi1.scheduler import DISABLED, DONE, FAILED, CentralPlannerScheduler
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 WORKER = 'myworker'
 
 
