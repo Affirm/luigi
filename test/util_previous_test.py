@@ -18,13 +18,13 @@
 import datetime
 from helpers import unittest
 
-import luigi
-import luigi.date_interval
-from luigi.util import get_previous_completed, previous
+import luigi1
+import luigi1.date_interval
+from luigi1.util import get_previous_completed, previous
 
 
-class DateTaskOk(luigi.Task):
-    date = luigi.DateParameter()
+class DateTaskOk(luigi1.Task):
+    date = luigi1.DateParameter()
 
     def complete(self):
         # test against 2000.03.01
@@ -49,8 +49,8 @@ class DateTaskOkTest(unittest.TestCase):
         self.assertEqual(None, prev)
 
 
-class DateHourTaskOk(luigi.Task):
-    hour = luigi.DateHourParameter()
+class DateHourTaskOk(luigi1.Task):
+    hour = luigi1.DateHourParameter()
 
     def complete(self):
         # test against 2000.03.01T02
@@ -75,8 +75,8 @@ class DateHourTaskOkTest(unittest.TestCase):
         self.assertEqual(None, prev)
 
 
-class DateMinuteTaskOk(luigi.Task):
-    minute = luigi.DateMinuteParameter()
+class DateMinuteTaskOk(luigi1.Task):
+    minute = luigi1.DateMinuteParameter()
 
     def complete(self):
         # test against 2000.03.01T02H03
@@ -101,34 +101,34 @@ class DateMinuteTaskOkTest(unittest.TestCase):
         self.assertEqual(None, prev)
 
 
-class DateIntervalTaskOk(luigi.Task):
-    interval = luigi.DateIntervalParameter()
+class DateIntervalTaskOk(luigi1.Task):
+    interval = luigi1.DateIntervalParameter()
 
     def complete(self):
-        return self.interval in [luigi.date_interval.Week(1999, 48), luigi.date_interval.Week(2000, 1), luigi.date_interval.Week(2000, 2)]
+        return self.interval in [luigi1.date_interval.Week(1999, 48), luigi1.date_interval.Week(2000, 1), luigi1.date_interval.Week(2000, 2)]
 
 
 class DateIntervalTaskOkTest(unittest.TestCase):
 
     def test_previous(self):
-        task = DateIntervalTaskOk(luigi.date_interval.Week(2000, 1))
+        task = DateIntervalTaskOk(luigi1.date_interval.Week(2000, 1))
         prev = previous(task)
-        self.assertEqual(prev.interval, luigi.date_interval.Week(1999, 52))
+        self.assertEqual(prev.interval, luigi1.date_interval.Week(1999, 52))
 
     def test_get_previous_completed(self):
-        task = DateIntervalTaskOk(luigi.date_interval.Week(2000, 1))
+        task = DateIntervalTaskOk(luigi1.date_interval.Week(2000, 1))
         prev = get_previous_completed(task, 5)
-        self.assertEqual(prev.interval, luigi.date_interval.Week(1999, 48))
+        self.assertEqual(prev.interval, luigi1.date_interval.Week(1999, 48))
 
     def test_get_previous_completed_not_found(self):
-        task = DateIntervalTaskOk(luigi.date_interval.Week(2000, 1))
+        task = DateIntervalTaskOk(luigi1.date_interval.Week(2000, 1))
         prev = get_previous_completed(task, 4)
         self.assertEqual(None, prev)
 
 
 class ExtendedDateTaskOk(DateTaskOk):
-    param1 = luigi.Parameter()
-    param2 = luigi.IntParameter(default=2)
+    param1 = luigi1.Parameter()
+    param2 = luigi1.IntParameter(default=2)
 
 
 class ExtendedDateTaskOkTest(unittest.TestCase):
@@ -141,9 +141,9 @@ class ExtendedDateTaskOkTest(unittest.TestCase):
         self.assertEqual(prev.param2, 2)
 
 
-class MultiTemporalTaskNok(luigi.Task):
-    date = luigi.DateParameter()
-    hour = luigi.DateHourParameter()
+class MultiTemporalTaskNok(luigi1.Task):
+    date = luigi1.DateParameter()
+    hour = luigi1.DateHourParameter()
 
 
 class MultiTemporalTaskNokTest(unittest.TestCase):
@@ -154,8 +154,8 @@ class MultiTemporalTaskNokTest(unittest.TestCase):
         self.assertRaises(NotImplementedError, get_previous_completed, task)
 
 
-class NoTemporalTaskNok(luigi.Task):
-    param = luigi.Parameter()
+class NoTemporalTaskNok(luigi1.Task):
+    param = luigi1.Parameter()
 
 
 class NoTemporalTaskNokTest(unittest.TestCase):

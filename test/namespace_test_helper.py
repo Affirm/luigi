@@ -15,16 +15,16 @@
 # limitations under the License.
 #
 
-import luigi
+import luigi1
 
-luigi.namespace("mynamespace")
+luigi1.namespace("mynamespace")
 
 
-class Foo(luigi.Task):
-    p = luigi.Parameter()
+class Foo(luigi1.Task):
+    p = luigi1.Parameter()
 
 
 class Bar(Foo):
     task_namespace = "othernamespace"  # namespace override
 
-luigi.namespace()
+luigi1.namespace()

@@ -1,6 +1,6 @@
-import luigi
+import luigi1
 
 
-class UnimportedTask(luigi.Task):
+class UnimportedTask(luigi1.Task):
     def complete(self):
         return False

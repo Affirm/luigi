@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import luigi
-from luigi.s3 import S3Target
-from luigi.contrib.spark import SparkSubmitTask, PySparkTask
+import luigi1
+from luigi1.s3 import S3Target
+from luigi1.contrib.spark import SparkSubmitTask, PySparkTask
 
 
 class InlinePySparkWordCount(PySparkTask):
@@ -73,7 +73,7 @@ class PySparkWordCount(SparkSubmitTask):
     """
     driver_memory = '2g'
     executor_memory = '3g'
-    total_executor_cores = luigi.IntParameter(default=100)
+    total_executor_cores = luigi1.IntParameter(default=100)
 
     name = "PySpark Word Count"
     app = 'wordcount.py'

@@ -17,15 +17,15 @@
 
 from helpers import unittest
 
-import luigi
-import luigi.date_interval
-import luigi.notifications
-from luigi.worker import TaskException
+import luigi1
+import luigi1.date_interval
+import luigi1.notifications
+from luigi1.worker import TaskException
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
-class MyTask(luigi.Task):
+class MyTask(luigi1.Task):
     # Test overriding the constructor without calling the superconstructor
     # This is a simple mistake but caused an error that was very hard to understand
 
@@ -37,12 +37,12 @@ class WorkerTaskTest(unittest.TestCase):
 
     def test_constructor(self):
         def f():
-            luigi.build([MyTask()], local_scheduler=True)
+            luigi1.build([MyTask()], local_scheduler=True)
         self.assertRaises(TaskException, f)
 
     def test_run_none(self):
         def f():
-            luigi.build([None], local_scheduler=True)
+            luigi1.build([None], local_scheduler=True)
         self.assertRaises(TaskException, f)
 
 if __name__ == '__main__':

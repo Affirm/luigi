@@ -17,10 +17,10 @@
 
 from helpers import unittest
 
-import luigi.rpc
-from luigi.scheduler import CentralPlannerScheduler
+import luigi1.rpc
+from luigi1.scheduler import CentralPlannerScheduler
 import central_planner_test
-import luigi.server
+import luigi1.server
 from server_test import ServerTestBase
 
 
@@ -29,11 +29,11 @@ class RPCTest(central_planner_test.CentralPlannerTest, ServerTestBase):
     def get_app(self):
         conf = self.get_scheduler_config()
         sch = CentralPlannerScheduler(**conf)
-        return luigi.server.app(sch)
+        return luigi1.server.app(sch)
 
     def setUp(self):
         super(RPCTest, self).setUp()
-        self.sch = luigi.rpc.RemoteScheduler(port=self.get_http_port())
+        self.sch = luigi1.rpc.RemoteScheduler(port=self.get_http_port())
         self.sch._wait = lambda: None
 
     def test_ping(self):

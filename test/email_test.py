@@ -18,7 +18,7 @@
 from helpers import unittest
 
 from helpers import with_config
-from luigi import notifications
+from luigi1 import notifications
 
 
 class TestEmail(unittest.TestCase):

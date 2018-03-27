@@ -18,17 +18,17 @@
 import datetime
 import json
 
-import luigi
-from luigi.contrib.esindex import CopyToIndex
+import luigi1
+from luigi1.contrib.esindex import CopyToIndex
 
 
-class FakeDocuments(luigi.Task):
+class FakeDocuments(luigi1.Task):
     """
     Generates a local file containing 5 elements of data in JSON format.
     """
 
     #: the date parameter.
-    date = luigi.DateParameter(default=datetime.date.today())
+    date = luigi1.DateParameter(default=datetime.date.today())
 
     def run(self):
         """
@@ -56,7 +56,7 @@ class FakeDocuments(luigi.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi.LocalTarget(path='/tmp/_docs-%s.ldj' % self.date)
+        return luigi1.LocalTarget(path='/tmp/_docs-%s.ldj' % self.date)
 
 
 class IndexDocuments(CopyToIndex):
@@ -90,7 +90,7 @@ class IndexDocuments(CopyToIndex):
 
     """
     #: date task parameter (default = today)
-    date = luigi.DateParameter(default=datetime.date.today())
+    date = luigi1.DateParameter(default=datetime.date.today())
 
     #: the name of the index in ElasticSearch to be updated.
     index = 'example_index'
@@ -112,4 +112,4 @@ class IndexDocuments(CopyToIndex):
         return FakeDocuments()
 
 if __name__ == "__main__":
-    luigi.run(['--task', 'IndexDocuments'], use_optparse=True)
+    luigi1.run(['--task', 'IndexDocuments'], use_optparse=True)

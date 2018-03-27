@@ -18,7 +18,7 @@
 import functools
 import sys
 
-from luigi import six
+from luigi1 import six
 
 # import unittest on python 2.6 for support of test skip
 if sys.version_info[:2] <= (2, 6):
@@ -47,10 +47,10 @@ class with_config(object):
     def __call__(self, fun):
         @functools.wraps(fun)
         def wrapper(*args, **kwargs):
-            import luigi.configuration
-            orig_conf = luigi.configuration.get_config()
-            luigi.configuration.LuigiConfigParser._instance = None
-            conf = luigi.configuration.get_config()
+            import luigi1.configuration
+            orig_conf = luigi1.configuration.get_config()
+            luigi1.configuration.LuigiConfigParser._instance = None
+            conf = luigi1.configuration.get_config()
             for (section, settings) in six.iteritems(self.config):
                 if not conf.has_section(section):
                     conf.add_section(section)
@@ -59,5 +59,5 @@ class with_config(object):
             try:
                 return fun(*args, **kwargs)
             finally:
-                luigi.configuration.LuigiConfigParser._instance = orig_conf
+                luigi1.configuration.LuigiConfigParser._instance = orig_conf
         return wrapper

@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-import luigi
-import luigi.hadoop
-import luigi.hdfs
+import luigi1
+import luigi1.hadoop
+import luigi1.hdfs
 
 
 # To make this run, you probably want to edit /etc/luigi/client.cfg and add something like:
@@ -26,14 +26,14 @@ import luigi.hdfs
 # jar: /usr/lib/hadoop-xyz/hadoop-streaming-xyz-123.jar
 
 
-class InputText(luigi.ExternalTask):
+class InputText(luigi1.ExternalTask):
     """
     This task is a :py:class:`luigi.task.ExternalTask` which means it doesn't generate the
     :py:meth:`~.InputText.output` target on its own instead relying on the execution something outside of Luigi
     to produce it.
     """
 
-    date = luigi.DateParameter()
+    date = luigi1.DateParameter()
 
     def output(self):
         """
@@ -43,10 +43,10 @@ class InputText(luigi.ExternalTask):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi.hdfs.HdfsTarget(self.date.strftime('/tmp/text/%Y-%m-%d.txt'))
+        return luigi1.hdfs.HdfsTarget(self.date.strftime('/tmp/text/%Y-%m-%d.txt'))
 
 
-class WordCount(luigi.hadoop.JobTask):
+class WordCount(luigi1.hadoop.JobTask):
     """
     This task runs a :py:class:`luigi.contrib.hadoop.JobTask`
     over the target data returned by :py:meth:`~/.InputText.output` and
@@ -55,7 +55,7 @@ class WordCount(luigi.hadoop.JobTask):
     This class uses :py:meth:`luigi.contrib.hadoop.JobTask.run`.
     """
 
-    date_interval = luigi.DateIntervalParameter()
+    date_interval = luigi1.DateIntervalParameter()
 
     def requires(self):
         """
@@ -75,7 +75,7 @@ class WordCount(luigi.hadoop.JobTask):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi.hdfs.HdfsTarget('/tmp/text-count/%s' % self.date_interval)
+        return luigi1.hdfs.HdfsTarget('/tmp/text-count/%s' % self.date_interval)
 
     def mapper(self, line):
         for word in line.strip().split():
@@ -85,4 +85,4 @@ class WordCount(luigi.hadoop.JobTask):
         yield key, sum(values)
 
 if __name__ == '__main__':
-    luigi.run()
+    luigi1.run()

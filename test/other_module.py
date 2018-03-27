@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
-import luigi
+import luigi1
 
 
-class OtherModuleTask(luigi.Task):
-    p = luigi.Parameter()
+class OtherModuleTask(luigi1.Task):
+    p = luigi1.Parameter()
 
     def output(self):
-        return luigi.LocalTarget(self.p)
+        return luigi1.LocalTarget(self.p)
 
     def run(self):
         with self.output().open('w') as f:

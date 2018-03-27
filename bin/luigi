@@ -2,12 +2,12 @@
 
 import sys
 import warnings
-import luigi.cmdline
+import luigi1.cmdline
 
 
 def main(argv):
     warnings.warn("'bin/luigi' has moved to console script 'luigi'", DeprecationWarning)
-    luigi.cmdline.luigi_run(argv)
+    luigi1.cmdline.luigi_run(argv)
 
 
 if __name__ == '__main__':

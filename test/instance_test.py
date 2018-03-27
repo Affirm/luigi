@@ -17,19 +17,19 @@
 
 from helpers import unittest
 
-import luigi
-import luigi.worker
-import luigi.date_interval
-import luigi.notifications
+import luigi1
+import luigi1.worker
+import luigi1.date_interval
+import luigi1.notifications
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
 class InstanceTest(unittest.TestCase):
 
     def test_simple(self):
-        class DummyTask(luigi.Task):
-            x = luigi.Parameter()
+        class DummyTask(luigi1.Task):
+            x = luigi1.Parameter()
 
         dummy_1 = DummyTask(1)
         dummy_2 = DummyTask(2)
@@ -41,7 +41,7 @@ class InstanceTest(unittest.TestCase):
     def test_dep(self):
         test = self
 
-        class A(luigi.Task):
+        class A(luigi1.Task):
 
             def __init__(self):
                 self.has_run = False
@@ -50,8 +50,8 @@ class InstanceTest(unittest.TestCase):
             def run(self):
                 self.has_run = True
 
-        class B(luigi.Task):
-            x = luigi.Parameter()
+        class B(luigi1.Task):
+            x = luigi1.Parameter()
 
             def requires(self):
                 return A()  # This will end up referring to the same object
@@ -59,17 +59,17 @@ class InstanceTest(unittest.TestCase):
             def run(self):
                 test.assertTrue(self.requires().has_run)
 
-        w = luigi.worker.Worker()
+        w = luigi1.worker.Worker()
         w.add(B(1))
         w.add(B(2))
         w.run()
         w.stop()
 
     def test_external_instance_cache(self):
-        class A(luigi.Task):
+        class A(luigi1.Task):
             pass
 
-        class OtherA(luigi.ExternalTask):
+        class OtherA(luigi1.ExternalTask):
             task_family = "A"
 
         oa = OtherA()
@@ -78,20 +78,20 @@ class InstanceTest(unittest.TestCase):
 
     def test_date(self):
         ''' Adding unit test because we had a problem with this '''
-        class DummyTask(luigi.Task):
-            x = luigi.DateIntervalParameter()
+        class DummyTask(luigi1.Task):
+            x = luigi1.DateIntervalParameter()
 
-        dummy_1 = DummyTask(luigi.date_interval.Year(2012))
-        dummy_2 = DummyTask(luigi.date_interval.Year(2013))
-        dummy_1b = DummyTask(luigi.date_interval.Year(2012))
+        dummy_1 = DummyTask(luigi1.date_interval.Year(2012))
+        dummy_2 = DummyTask(luigi1.date_interval.Year(2013))
+        dummy_1b = DummyTask(luigi1.date_interval.Year(2012))
 
         self.assertNotEqual(dummy_1, dummy_2)
         self.assertEqual(dummy_1, dummy_1b)
 
     def test_unhashable_type(self):
         # See #857
-        class DummyTask(luigi.Task):
-            x = luigi.Parameter()
+        class DummyTask(luigi1.Task):
+            x = luigi1.Parameter()
 
         dummy = DummyTask(x={})
 

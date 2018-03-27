@@ -21,11 +21,11 @@ import subprocess
 import tempfile
 from helpers import unittest
 
-import luigi
-import luigi.lock
-import luigi.notifications
+import luigi1
+import luigi1.lock
+import luigi1.notifications
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
 class TestCmd(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestCmd(unittest.TestCase):
     def test_getpcmd(self):
         p = subprocess.Popen(["sleep", "1"])
         self.assertTrue(
-            luigi.lock.getpcmd(p.pid) in ["sleep 1", '[sleep]']
+            luigi1.lock.getpcmd(p.pid) in ["sleep 1", '[sleep]']
         )
         p.kill()
 
@@ -42,28 +42,28 @@ class LockTest(unittest.TestCase):
 
     def setUp(self):
         self.pid_dir = tempfile.mkdtemp()
-        self.pid, self.cmd, self.pid_file = luigi.lock.get_info(self.pid_dir)
+        self.pid, self.cmd, self.pid_file = luigi1.lock.get_info(self.pid_dir)
 
     def tearDown(self):
         os.remove(self.pid_file)
         os.rmdir(self.pid_dir)
 
     def test_acquiring_free_lock(self):
-        acquired = luigi.lock.acquire_for(self.pid_dir)
+        acquired = luigi1.lock.acquire_for(self.pid_dir)
         self.assertTrue(acquired)
 
     def test_acquiring_taken_lock(self):
         with open(self.pid_file, 'w') as f:
             f.write('%d\n' % (self.pid, ))
 
-        acquired = luigi.lock.acquire_for(self.pid_dir)
+        acquired = luigi1.lock.acquire_for(self.pid_dir)
         self.assertFalse(acquired)
 
     def test_acquiring_partially_taken_lock(self):
         with open(self.pid_file, 'w') as f:
             f.write('%d\n' % (self.pid, ))
 
-        acquired = luigi.lock.acquire_for(self.pid_dir, 2)
+        acquired = luigi1.lock.acquire_for(self.pid_dir, 2)
         self.assertTrue(acquired)
 
         s = os.stat(self.pid_file)
@@ -74,7 +74,7 @@ class LockTest(unittest.TestCase):
         with open(self.pid_file, 'w') as f:
             f.write('%d\n' % (fake_pid, ))
 
-        acquired = luigi.lock.acquire_for(self.pid_dir)
+        acquired = luigi1.lock.acquire_for(self.pid_dir)
         self.assertTrue(acquired)
 
         s = os.stat(self.pid_file)

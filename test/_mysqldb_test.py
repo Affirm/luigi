@@ -18,7 +18,7 @@
 from helpers import unittest
 
 import mysql.connector
-from luigi.contrib.mysqldb import MySqlTarget
+from luigi1.contrib.mysqldb import MySqlTarget
 
 host = 'localhost'
 port = 3306

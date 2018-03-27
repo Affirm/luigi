@@ -21,10 +21,10 @@ import tempfile
 import time
 from helpers import unittest
 
-import luigi.scheduler
+import luigi1.scheduler
 from helpers import with_config
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
 class SchedulerTest(unittest.TestCase):
@@ -38,7 +38,7 @@ class SchedulerTest(unittest.TestCase):
                 state = (tasks, active_workers)
                 pickle.dump(state, fobj)
 
-            state = luigi.scheduler.SimpleTaskState(
+            state = luigi1.scheduler.SimpleTaskState(
                 state_path=fn.name)
             state.load()
 
@@ -50,7 +50,7 @@ class SchedulerTest(unittest.TestCase):
             with open(fn.name, 'w') as fobj:
                 print("b0rk", file=fobj)
 
-            state = luigi.scheduler.SimpleTaskState(
+            state = luigi1.scheduler.SimpleTaskState(
                 state_path=fn.name)
             state.load()  # bad if this crashes
 
@@ -58,19 +58,19 @@ class SchedulerTest(unittest.TestCase):
 
     @with_config({'scheduler': {'disable-num-failures': '44', 'worker-disconnect-delay': '55'}})
     def test_scheduler_with_config(self):
-        cps = luigi.scheduler.CentralPlannerScheduler()
+        cps = luigi1.scheduler.CentralPlannerScheduler()
         self.assertEqual(44, cps._config.disable_failures)
         self.assertEqual(55, cps._config.worker_disconnect_delay)
 
         # Override
-        cps = luigi.scheduler.CentralPlannerScheduler(disable_failures=66,
-                                                      worker_disconnect_delay=77)
+        cps = luigi1.scheduler.CentralPlannerScheduler(disable_failures=66,
+                                                       worker_disconnect_delay=77)
         self.assertEqual(66, cps._config.disable_failures)
         self.assertEqual(77, cps._config.worker_disconnect_delay)
 
     @with_config({'resources': {'a': '100', 'b': '200'}})
     def test_scheduler_with_resources(self):
-        cps = luigi.scheduler.CentralPlannerScheduler()
+        cps = luigi1.scheduler.CentralPlannerScheduler()
         self.assertEqual({'a': 100, 'b': 200}, cps._resources)
 
 

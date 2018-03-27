@@ -21,11 +21,11 @@ import random
 import tempfile
 from helpers import unittest
 
-import luigi
+import luigi1
 
 
-class AbstractTask(luigi.Task):
-    k = luigi.IntParameter()
+class AbstractTask(luigi1.Task):
+    k = luigi1.IntParameter()
 
     @abc.abstractproperty
     def foo(self):
@@ -61,4 +61,4 @@ class AbstractSubclassTest(unittest.TestCase):
         self.assertEqual("bar,hellohello", Implementation(k=2).run())
 
 if __name__ == '__main__':
-    luigi.run()
+    luigi1.run()

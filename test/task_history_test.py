@@ -17,15 +17,15 @@
 
 from helpers import unittest
 
-import luigi
-import luigi.scheduler
-import luigi.task_history
-import luigi.worker
+import luigi1
+import luigi1.scheduler
+import luigi1.task_history
+import luigi1.worker
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
-class SimpleTaskHistory(luigi.task_history.TaskHistory):
+class SimpleTaskHistory(luigi1.task_history.TaskHistory):
 
     def __init__(self):
         self.actions = []
@@ -44,14 +44,14 @@ class TaskHistoryTest(unittest.TestCase):
 
     def setUp(self):
         self.th = SimpleTaskHistory()
-        self.sch = luigi.scheduler.CentralPlannerScheduler(task_history_impl=self.th)
-        self.w = luigi.worker.Worker(scheduler=self.sch)
+        self.sch = luigi1.scheduler.CentralPlannerScheduler(task_history_impl=self.th)
+        self.w = luigi1.worker.Worker(scheduler=self.sch)
 
     def tearDown(self):
         self.w.stop()
 
     def test_run(self):
-        class MyTask(luigi.Task):
+        class MyTask(luigi1.Task):
             pass
 
         self.w.add(MyTask())

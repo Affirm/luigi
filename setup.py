@@ -22,12 +22,12 @@ except:
 
 
 def get_static_files(path):
-    return [os.path.join(dirpath.replace("luigi/", ""), ext) 
+    return [os.path.join(dirpath.replace("luigi1/", ""), ext)
             for (dirpath, dirnames, filenames) in os.walk(path)
             for ext in ["*.html", "*.js", "*.css", "*.png"]]
 
 
-luigi_package_data = sum(map(get_static_files, ["luigi/static", "luigi/templates"]), [])
+luigi_package_data = sum(map(get_static_files, ["luigi1/static", "luigi1/templates"]), [])
 
 readme_note = """\
 .. note::
@@ -53,8 +53,8 @@ if sys.version_info[:2] < (2, 7):
     install_requires.extend(['argparse', 'ordereddict', 'importlib'])
 
 setup(
-    name='luigi',
-    version='1.1.2+affirm.1.0.0',
+    name='luigi1',
+    version='1.1.2+affirm.1.0.0+obsolete',
     description='Workflow mgmgt + task scheduling + dependency resolution',
     long_description=long_description,
     author='Erik Bernhardsson',
@@ -62,19 +62,19 @@ setup(
     url='https://github.com/spotify/luigi',
     license='Apache License 2.0',
     packages=[
-        'luigi',
-        'luigi.contrib',
-        'luigi.tools'
+        'luigi1',
+        'luigi1.contrib',
+        'luigi1.tools'
     ],
     package_data={
-        'luigi': luigi_package_data
+        'luigi1': luigi_package_data
     },
     entry_points={
         'console_scripts': [
-            'luigi = luigi.cmdline:luigi_run',
-            'luigid = luigi.cmdline:luigid',
-            'luigi-grep = luigi.tools.luigi_grep:main',
-            'luigi-deps = luigi.tools.deps:main',
+            'luigi1 = luigi1.cmdline:luigi_run',
+            'luigi1d = luigi1.cmdline:luigid',
+            'luigi1-grep = luigi1.tools.luigi_grep:main',
+            'luigi1-deps = luigi1.tools.deps:main',
         ]
     },
     install_requires=install_requires,

@@ -17,11 +17,11 @@
 
 from helpers import unittest
 
-import luigi
+import luigi1
 
 
 def create_class(cls_name):
-    class NewTask(luigi.WrapperTask):
+    class NewTask(luigi1.WrapperTask):
         pass
 
     NewTask.__name__ = cls_name
@@ -41,8 +41,8 @@ class SetTaskNameTest(unittest.TestCase):
     to resolve the issue. '''
 
     def test_set_task_name(self):
-        luigi.run(['--local-scheduler', '--no-lock', 'MyNewTask'])
+        luigi1.run(['--local-scheduler', '--no-lock', 'MyNewTask'])
 
 
 if __name__ == '__main__':
-    luigi.run()
+    luigi1.run()

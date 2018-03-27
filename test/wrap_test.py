@@ -19,15 +19,15 @@ from __future__ import print_function
 import datetime
 from helpers import unittest
 
-import luigi
-import luigi.notifications
-from luigi.mock import MockTarget
-from luigi.util import inherits
+import luigi1
+import luigi1.notifications
+from luigi1.mock import MockTarget
+from luigi1.util import inherits
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
-class A(luigi.Task):
+class A(luigi1.Task):
 
     def output(self):
         return MockTarget('/tmp/a.txt')
@@ -38,8 +38,8 @@ class A(luigi.Task):
         f.close()
 
 
-class B(luigi.Task):
-    date = luigi.DateParameter()
+class B(luigi1.Task):
+    date = luigi1.DateParameter()
 
     def output(self):
         return MockTarget(self.date.strftime('/tmp/b-%Y-%m-%d.txt'))
@@ -52,7 +52,7 @@ class B(luigi.Task):
 
 def XMLWrapper(cls):
     @inherits(cls)
-    class XMLWrapperCls(luigi.Task):
+    class XMLWrapperCls(luigi1.Task):
 
         def requires(self):
             return self.clone_parent()
@@ -91,11 +91,11 @@ class WrapperTest(unittest.TestCase):
         MockTarget.fs.clear()
 
     def test_a(self):
-        luigi.build([AXML()], local_scheduler=True, no_lock=True, workers=self.workers)
+        luigi1.build([AXML()], local_scheduler=True, no_lock=True, workers=self.workers)
         self.assertEqual(MockTarget.fs.get_data('/tmp/a.xml'), b'<?xml version="1.0" ?>\n<dummy-xml>hello, world</dummy-xml>\n')
 
     def test_b(self):
-        luigi.build([BXML(datetime.date(2012, 1, 1))], local_scheduler=True, no_lock=True, workers=self.workers)
+        luigi1.build([BXML(datetime.date(2012, 1, 1))], local_scheduler=True, no_lock=True, workers=self.workers)
         self.assertEqual(MockTarget.fs.get_data('/tmp/b-2012-01-01.xml'), b'<?xml version="1.0" ?>\n<dummy-xml>goodbye, space</dummy-xml>\n')
 
 
@@ -104,4 +104,4 @@ class WrapperWithMultipleWorkersTest(WrapperTest):
 
 
 if __name__ == '__main__':
-    luigi.run()
+    luigi1.run()

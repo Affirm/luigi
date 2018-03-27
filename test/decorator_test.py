@@ -20,44 +20,44 @@ import datetime
 import pickle
 from helpers import unittest
 
-import luigi
-import luigi.notifications
-from luigi.interface import ArgParseInterface
-from luigi.mock import MockTarget
-from luigi.parameter import MissingParameterException
-from luigi.util import common_params, copies, delegates, inherits, requires
+import luigi1
+import luigi1.notifications
+from luigi1.interface import ArgParseInterface
+from luigi1.mock import MockTarget
+from luigi1.parameter import MissingParameterException
+from luigi1.util import common_params, copies, delegates, inherits, requires
 
-luigi.notifications.DEBUG = True
+luigi1.notifications.DEBUG = True
 
 
-class A(luigi.Task):
-    param1 = luigi.Parameter("class A-specific default")
+class A(luigi1.Task):
+    param1 = luigi1.Parameter("class A-specific default")
 
 
 @inherits(A)
-class B(luigi.Task):
-    param2 = luigi.Parameter("class B-specific default")
+class B(luigi1.Task):
+    param2 = luigi1.Parameter("class B-specific default")
 
 
 @inherits(B)
-class C(luigi.Task):
-    param3 = luigi.Parameter("class C-specific default")
+class C(luigi1.Task):
+    param3 = luigi1.Parameter("class C-specific default")
 
 
 @inherits(B)
-class D(luigi.Task):
-    param1 = luigi.Parameter("class D overwriting class A's default")
+class D(luigi1.Task):
+    param1 = luigi1.Parameter("class D overwriting class A's default")
 
 
 @inherits(B)
-class D_null(luigi.Task):
+class D_null(luigi1.Task):
     param1 = None
 
 
 @inherits(A)
 @inherits(B)
-class E(luigi.Task):
-    param4 = luigi.Parameter("class E-specific default")
+class E(luigi1.Task):
+    param4 = luigi1.Parameter("class E-specific default")
 
 
 class InheritTest(unittest.TestCase):
@@ -104,28 +104,28 @@ class InheritTest(unittest.TestCase):
         self.assertEqual(B.__name__, 'B')
 
 
-class F(luigi.Task):
-    param1 = luigi.Parameter("A parameter on a base task, that will be required later.")
+class F(luigi1.Task):
+    param1 = luigi1.Parameter("A parameter on a base task, that will be required later.")
 
 
 @inherits(F)
-class G(luigi.Task):
-    param2 = luigi.Parameter("A separate parameter that doesn't affect 'F'")
+class G(luigi1.Task):
+    param2 = luigi1.Parameter("A separate parameter that doesn't affect 'F'")
 
     def requires(self):
         return F(**common_params(self, F))
 
 
 @inherits(G)
-class H(luigi.Task):
-    param2 = luigi.Parameter("OVERWRITING")
+class H(luigi1.Task):
+    param2 = luigi1.Parameter("OVERWRITING")
 
     def requires(self):
         return G(**common_params(self, G))
 
 
 @inherits(G)
-class H_null(luigi.Task):
+class H_null(luigi1.Task):
     param2 = None
 
     def requires(self):
@@ -134,43 +134,43 @@ class H_null(luigi.Task):
 
 
 @inherits(G)
-class I(luigi.Task):
+class I(luigi1.Task):
 
     def requires(self):
         return F(**common_params(self, F))
 
 
-class J(luigi.Task):
-    param1 = luigi.Parameter()  # something required, with no default
+class J(luigi1.Task):
+    param1 = luigi1.Parameter()  # something required, with no default
 
 
 @inherits(J)
-class K_shouldnotinstantiate(luigi.Task):
-    param2 = luigi.Parameter("A K-specific parameter")
+class K_shouldnotinstantiate(luigi1.Task):
+    param2 = luigi1.Parameter("A K-specific parameter")
 
 
 @inherits(J)
-class K_shouldfail(luigi.Task):
+class K_shouldfail(luigi1.Task):
     param1 = None
-    param2 = luigi.Parameter("A K-specific parameter")
+    param2 = luigi1.Parameter("A K-specific parameter")
 
     def requires(self):
         return J(**common_params(self, J))
 
 
 @inherits(J)
-class K_shouldsucceed(luigi.Task):
+class K_shouldsucceed(luigi1.Task):
     param1 = None
-    param2 = luigi.Parameter("A K-specific parameter")
+    param2 = luigi1.Parameter("A K-specific parameter")
 
     def requires(self):
         return J(param1="Required parameter", **common_params(self, J))
 
 
 @inherits(J)
-class K_wrongparamsorder(luigi.Task):
+class K_wrongparamsorder(luigi1.Task):
     param1 = None
-    param2 = luigi.Parameter("A K-specific parameter")
+    param2 = luigi1.Parameter("A K-specific parameter")
 
     def requires(self):
         return J(param1="Required parameter", **common_params(J, self))
@@ -227,24 +227,24 @@ class RequiresTest(unittest.TestCase):
         self.assertRaises(TypeError, self.k_wrongparamsorder.requires)
 
 
-class X(luigi.Task):
-    n = luigi.IntParameter(default=42)
+class X(luigi1.Task):
+    n = luigi1.IntParameter(default=42)
 
 
 @inherits(X)
-class Y(luigi.Task):
+class Y(luigi1.Task):
 
     def requires(self):
         return self.clone_parent()
 
 
 @requires(X)
-class Y2(luigi.Task):
+class Y2(luigi1.Task):
     pass
 
 
 @inherits(X)
-class Z(luigi.Task):
+class Z(luigi1.Task):
     n = None
 
     def requires(self):
@@ -252,8 +252,8 @@ class Z(luigi.Task):
 
 
 @requires(X)
-class Y3(luigi.Task):
-    n = luigi.IntParameter(default=43)
+class Y3(luigi1.Task):
+    n = luigi1.IntParameter(default=43)
 
 
 class CloneParentTest(unittest.TestCase):
@@ -287,8 +287,8 @@ class CloneParentTest(unittest.TestCase):
         self.assertEqual(x.__class__.__name__, 'X')
 
 
-class P(luigi.Task):
-    date = luigi.DateParameter()
+class P(luigi1.Task):
+    date = luigi1.DateParameter()
 
     def output(self):
         return MockTarget(self.date.strftime('/tmp/data-%Y-%m-%d.txt'))
@@ -300,7 +300,7 @@ class P(luigi.Task):
 
 
 @copies(P)
-class PCopy(luigi.Task):
+class PCopy(luigi1.Task):
 
     def output(self):
         return MockTarget(self.date.strftime('/tmp/copy-data-%Y-%m-%d.txt'))
@@ -309,7 +309,7 @@ class PCopy(luigi.Task):
 class CopyTest(unittest.TestCase):
 
     def test_copy(self):
-        luigi.build([PCopy(date=datetime.date(2012, 1, 1))], local_scheduler=True)
+        luigi1.build([PCopy(date=datetime.date(2012, 1, 1))], local_scheduler=True)
         self.assertEqual(MockTarget.fs.get_data('/tmp/data-2012-01-01.txt'), b'hello, world\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/copy-data-2012-01-01.txt'), b'hello, world\n')
 
@@ -322,20 +322,20 @@ class PickleTest(unittest.TestCase):
         p_pickled = pickle.dumps(p)
         p = pickle.loads(p_pickled)
 
-        luigi.build([p], local_scheduler=True)
+        luigi1.build([p], local_scheduler=True)
         self.assertEqual(MockTarget.fs.get_data('/tmp/data-2013-01-01.txt'), b'hello, world\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/copy-data-2013-01-01.txt'), b'hello, world\n')
 
 
-class Subtask(luigi.Task):
-    k = luigi.IntParameter()
+class Subtask(luigi1.Task):
+    k = luigi1.IntParameter()
 
     def f(self, x):
         return x ** self.k
 
 
 @delegates
-class SubtaskDelegator(luigi.Task):
+class SubtaskDelegator(luigi1.Task):
 
     def subtasks(self):
         return [Subtask(1), Subtask(2)]
@@ -350,13 +350,13 @@ class SubtaskTest(unittest.TestCase):
 
     def test_subtasks(self):
         sd = SubtaskDelegator()
-        luigi.build([sd], local_scheduler=True)
+        luigi1.build([sd], local_scheduler=True)
         self.assertEqual(sd.s, 42 * (1 + 42))
 
     def test_forgot_subtasks(self):
         def trigger_failure():
             @delegates
-            class SubtaskDelegatorBroken(luigi.Task):
+            class SubtaskDelegatorBroken(luigi1.Task):
                 pass
 
         self.assertRaises(AttributeError, trigger_failure)
@@ -364,7 +364,7 @@ class SubtaskTest(unittest.TestCase):
     def test_cmdline(self):
         # Exposes issue where wrapped tasks are registered twice under
         # the same name
-        from luigi.task import Register
+        from luigi1.task import Register
         self.assertEqual(Register.get_task_cls('SubtaskDelegator'), SubtaskDelegator)
 
 

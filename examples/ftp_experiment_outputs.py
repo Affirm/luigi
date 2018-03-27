@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-import luigi
-from luigi.contrib.ftp import RemoteTarget
+import luigi1
+from luigi1.contrib.ftp import RemoteTarget
 
 #: the FTP server
 HOST = "some_host"
@@ -26,7 +26,7 @@ USER = "user"
 PWD = "some_password"
 
 
-class ExperimentTask(luigi.ExternalTask):
+class ExperimentTask(luigi1.ExternalTask):
     """
     This class represents something that was created elsewhere by an external process,
     so all we want to do is to implement the output method.
@@ -53,7 +53,7 @@ class ExperimentTask(luigi.ExternalTask):
             print >> outfile, "data 3 195 1 52 60"
 
 
-class ProcessingTask(luigi.Task):
+class ProcessingTask(luigi1.Task):
     """
     This class represents something that was created elsewhere by an external process,
     so all we want to do is to implement the output method.
@@ -77,7 +77,7 @@ class ProcessingTask(luigi.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`~luigi.target.Target`)
         """
-        return luigi.LocalTarget('/tmp/processeddata.txt')
+        return luigi1.LocalTarget('/tmp/processeddata.txt')
 
     def run(self):
         avg = 0.0
@@ -101,4 +101,4 @@ class ProcessingTask(luigi.Task):
 
 
 if __name__ == '__main__':
-    luigi.run()
+    luigi1.run()
