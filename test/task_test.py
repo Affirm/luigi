@@ -19,26 +19,26 @@ import doctest
 from helpers import unittest
 from datetime import datetime, timedelta
 
-import luigi1
-import luigi1.task
+import luigi
+import luigi.task
 
 
-class DummyTask(luigi1.Task):
+class DummyTask(luigi.Task):
 
-    param = luigi1.Parameter()
-    bool_param = luigi1.BoolParameter()
-    int_param = luigi1.IntParameter()
-    float_param = luigi1.FloatParameter()
-    date_param = luigi1.DateParameter()
-    datehour_param = luigi1.DateHourParameter()
-    timedelta_param = luigi1.TimeDeltaParameter()
-    list_param = luigi1.Parameter(is_list=True)
+    param = luigi.Parameter()
+    bool_param = luigi.BoolParameter()
+    int_param = luigi.IntParameter()
+    float_param = luigi.FloatParameter()
+    date_param = luigi.DateParameter()
+    datehour_param = luigi.DateHourParameter()
+    timedelta_param = luigi.TimeDeltaParameter()
+    list_param = luigi.Parameter(is_list=True)
 
 
 class TaskTest(unittest.TestCase):
 
     def test_tasks_doctest(self):
-        doctest.testmod(luigi1.task)
+        doctest.testmod(luigi.task)
 
     def test_task_to_str_to_task(self):
         params = dict(
@@ -57,19 +57,19 @@ class TaskTest(unittest.TestCase):
 
     def test_id_to_name_and_params(self):
         task_id = "InputText(date=2014-12-29)"
-        (name, params) = luigi1.task.id_to_name_and_params(task_id)
+        (name, params) = luigi.task.id_to_name_and_params(task_id)
         self.assertEquals(name, "InputText")
         self.assertEquals(params, dict(date="2014-12-29"))
 
     def test_id_to_name_and_params_multiple_args(self):
         task_id = "InputText(date=2014-12-29,foo=bar)"
-        (name, params) = luigi1.task.id_to_name_and_params(task_id)
+        (name, params) = luigi.task.id_to_name_and_params(task_id)
         self.assertEquals(name, "InputText")
         self.assertEquals(params, dict(date="2014-12-29", foo="bar"))
 
     def test_id_to_name_and_params_list_args(self):
         task_id = "InputText(date=2014-12-29,foo=[bar,baz-foo])"
-        (name, params) = luigi1.task.id_to_name_and_params(task_id)
+        (name, params) = luigi.task.id_to_name_and_params(task_id)
         self.assertEquals(name, "InputText")
         self.assertEquals(params, dict(date="2014-12-29", foo=["bar", "baz-foo"]))
 

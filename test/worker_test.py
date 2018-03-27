@@ -26,17 +26,17 @@ import threading
 import time
 from helpers import unittest
 
-import luigi1.notifications
-import luigi1.worker
+import luigi.notifications
+import luigi.worker
 import mock
 from helpers import with_config
-from luigi1 import ExternalTask, RemoteScheduler, Task
-from luigi1.mock import MockTarget, MockFileSystem
-from luigi1.scheduler import CentralPlannerScheduler
-from luigi1.worker import Worker
-from luigi1 import six
+from luigi import ExternalTask, RemoteScheduler, Task
+from luigi.mock import MockTarget, MockFileSystem
+from luigi.scheduler import CentralPlannerScheduler
+from luigi.worker import Worker
+from luigi import six
 
-luigi1.notifications.DEBUG = True
+luigi.notifications.DEBUG = True
 
 
 class DummyTask(Task):
@@ -54,10 +54,10 @@ class DummyTask(Task):
 
 
 class DynamicDummyTask(Task):
-    p = luigi1.Parameter()
+    p = luigi.Parameter()
 
     def output(self):
-        return luigi1.LocalTarget(self.p)
+        return luigi.LocalTarget(self.p)
 
     def run(self):
         with self.output().open('w') as f:
@@ -70,11 +70,11 @@ class DynamicDummyTaskWithNamespace(DynamicDummyTask):
 
 
 class DynamicRequires(Task):
-    p = luigi1.Parameter()
-    use_banana_task = luigi1.BoolParameter(default=False)
+    p = luigi.Parameter()
+    use_banana_task = luigi.BoolParameter(default=False)
 
     def output(self):
-        return luigi1.LocalTarget(os.path.join(self.p, 'parent'))
+        return luigi.LocalTarget(os.path.join(self.p, 'parent'))
 
     def run(self):
         if self.use_banana_task:
@@ -92,10 +92,10 @@ class DynamicRequires(Task):
 
 
 class DynamicRequiresOtherModule(Task):
-    p = luigi1.Parameter()
+    p = luigi.Parameter()
 
     def output(self):
-        return luigi1.LocalTarget(os.path.join(self.p, 'baz'))
+        return luigi.LocalTarget(os.path.join(self.p, 'baz'))
 
     def run(self):
         import other_module
@@ -308,7 +308,7 @@ class WorkerTest(unittest.TestCase):
         class A(Task):
 
             """ Task that must run twice to succeed """
-            i = luigi1.IntParameter()
+            i = luigi.IntParameter()
 
             runs = 0
 
@@ -553,7 +553,7 @@ class DynamicDependenciesTest(unittest.TestCase):
     def test_dynamic_dependencies(self, use_banana_task=False):
         t0 = time.time()
         t = DynamicRequires(p=self.p, use_banana_task=use_banana_task)
-        luigi1.build([t], local_scheduler=True, workers=self.n_workers)
+        luigi.build([t], local_scheduler=True, workers=self.n_workers)
         self.assertTrue(t.complete())
 
         # loop through output and verify
@@ -568,7 +568,7 @@ class DynamicDependenciesTest(unittest.TestCase):
 
     def test_dynamic_dependencies_other_module(self):
         t = DynamicRequiresOtherModule(p=self.p)
-        luigi1.build([t], local_scheduler=True, workers=self.n_workers)
+        luigi.build([t], local_scheduler=True, workers=self.n_workers)
         self.assertTrue(t.complete())
 
 
@@ -702,7 +702,7 @@ class WorkerEmailTest(unittest.TestCase):
 
     @email_patch
     def test_run_error(self, emails):
-        class A(luigi1.Task):
+        class A(luigi.Task):
 
             def complete(self):
                 return False
@@ -729,21 +729,21 @@ class WorkerEmailTest(unittest.TestCase):
         self.assertTrue(a.complete())
 
 
-class RaiseSystemExit(luigi1.Task):
+class RaiseSystemExit(luigi.Task):
 
     def run(self):
         raise SystemExit("System exit!!")
 
 
-class SuicidalWorker(luigi1.Task):
-    signal = luigi1.IntParameter()
+class SuicidalWorker(luigi.Task):
+    signal = luigi.IntParameter()
 
     def run(self):
         os.kill(os.getpid(), self.signal)
 
 
-class HungWorker(luigi1.Task):
-    worker_timeout = luigi1.IntParameter(default=None)
+class HungWorker(luigi.Task):
+    worker_timeout = luigi.IntParameter(default=None)
 
     def run(self):
         while True:
@@ -764,26 +764,26 @@ class MultipleWorkersTest(unittest.TestCase):
         # various platform and how multiprocessing is implemented. If it's using os.fork
         # under the hood it should be fine, but dynamic classses can't be pickled, so
         # other implementations of multiprocessing (using spawn etc) may fail
-        class MyDynamicTask(luigi1.Task):
-            x = luigi1.Parameter()
+        class MyDynamicTask(luigi.Task):
+            x = luigi.Parameter()
 
             def run(self):
                 time.sleep(0.1)
 
         t0 = time.time()
-        luigi1.build([MyDynamicTask(i) for i in range(100)], workers=100, local_scheduler=True)
+        luigi.build([MyDynamicTask(i) for i in range(100)], workers=100, local_scheduler=True)
         self.assertTrue(time.time() < t0 + 5.0)  # should ideally take exactly 0.1s, but definitely less than 10.0
 
     def test_system_exit(self):
         # This would hang indefinitely before this fix:
         # https://github.com/spotify/luigi/pull/439
-        luigi1.build([RaiseSystemExit()], workers=2, local_scheduler=True)
+        luigi.build([RaiseSystemExit()], workers=2, local_scheduler=True)
 
     def test_term_worker(self):
-        luigi1.build([SuicidalWorker(signal.SIGTERM)], workers=2, local_scheduler=True)
+        luigi.build([SuicidalWorker(signal.SIGTERM)], workers=2, local_scheduler=True)
 
     def test_kill_worker(self):
-        luigi1.build([SuicidalWorker(signal.SIGKILL)], workers=2, local_scheduler=True)
+        luigi.build([SuicidalWorker(signal.SIGKILL)], workers=2, local_scheduler=True)
 
     def test_purge_multiple_workers(self):
         w = Worker(worker_processes=2, wait_interval=0.01)
@@ -801,7 +801,7 @@ class MultipleWorkersTest(unittest.TestCase):
         w._handle_next_task()
 
     def test_time_out_hung_worker(self):
-        luigi1.build([HungWorker(0.1)], workers=2, local_scheduler=True)
+        luigi.build([HungWorker(0.1)], workers=2, local_scheduler=True)
 
     @mock.patch('luigi.worker.time')
     def test_purge_hung_worker_default_timeout_time(self, mock_time):
@@ -835,7 +835,7 @@ class MultipleWorkersTest(unittest.TestCase):
 
 
 class Dummy2Task(Task):
-    p = luigi1.Parameter()
+    p = luigi.Parameter()
 
     def output(self):
         return MockTarget(self.p)
@@ -873,7 +873,7 @@ class AssistantTest(unittest.TestCase):
         self.assertEqual(list(self.sch.task_list('FAILED', '').keys()), [str(d)])
 
     def test_unimported_job_type(self):
-        class NotImportedTask(luigi1.Task):
+        class NotImportedTask(luigi.Task):
             task_family = 'UnimportedTask'
             task_module = None
 
@@ -891,10 +891,10 @@ class AssistantTest(unittest.TestCase):
         self.assertEqual(list(self.sch.task_list('DONE', '').keys()), ['UnimportedTask()'])
 
 
-class ForkBombTask(luigi1.Task):
-    depth = luigi1.IntParameter()
-    breadth = luigi1.IntParameter()
-    p = luigi1.Parameter(default=(0,))  # ehm for some weird reason [0] becomes a tuple...?
+class ForkBombTask(luigi.Task):
+    depth = luigi.IntParameter()
+    breadth = luigi.IntParameter()
+    p = luigi.Parameter(default=(0, ))  # ehm for some weird reason [0] becomes a tuple...?
 
     def output(self):
         return MockTarget('.'.join(map(str, self.p)))
@@ -940,4 +940,4 @@ class TaskLimitTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    luigi1.run()
+    luigi.run()

@@ -19,16 +19,16 @@ import os
 import shutil
 import time
 
-import luigi1
+import luigi
 
 
-class MyExternal(luigi1.ExternalTask):
+class MyExternal(luigi.ExternalTask):
 
     def complete(self):
         return False
 
 
-class Foo(luigi1.Task):
+class Foo(luigi.Task):
 
     def run(self):
         print "Running Foo"
@@ -39,8 +39,8 @@ class Foo(luigi1.Task):
             yield Bar(i)
 
 
-class Bar(luigi1.Task):
-    num = luigi1.IntParameter()
+class Bar(luigi.Task):
+    num = luigi.IntParameter()
 
     def run(self):
         time.sleep(1)
@@ -54,11 +54,11 @@ class Bar(luigi1.Task):
         :rtype: object (:py:class:`~luigi.target.Target`)
         """
         time.sleep(1)
-        return luigi1.LocalTarget('/tmp/bar/%d' % self.num)
+        return luigi.LocalTarget('/tmp/bar/%d' % self.num)
 
 
 if __name__ == "__main__":
     if os.path.exists('/tmp/bar'):
         shutil.rmtree('/tmp/bar')
 
-    luigi1.run(['--task', 'Foo', '--workers', '2'], use_optparse=True)
+    luigi.run(['--task', 'Foo', '--workers', '2'], use_optparse=True)

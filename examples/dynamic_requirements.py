@@ -18,11 +18,11 @@
 import random as rnd
 import time
 
-import luigi1
+import luigi
 
 
-class Config(luigi1.Task):
-    seed = luigi1.IntParameter()
+class Config(luigi.Task):
+    seed = luigi.IntParameter()
 
     def output(self):
         """
@@ -32,7 +32,7 @@ class Config(luigi1.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi1.LocalTarget('/tmp/Config_%d.txt' % self.seed)
+        return luigi.LocalTarget('/tmp/Config_%d.txt' % self.seed)
 
     def run(self):
         time.sleep(5)
@@ -44,8 +44,8 @@ class Config(luigi1.Task):
             f.write(result)
 
 
-class Data(luigi1.Task):
-    magic_number = luigi1.IntParameter()
+class Data(luigi.Task):
+    magic_number = luigi.IntParameter()
 
     def output(self):
         """
@@ -55,7 +55,7 @@ class Data(luigi1.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi1.LocalTarget('/tmp/Data_%d.txt' % self.magic_number)
+        return luigi.LocalTarget('/tmp/Data_%d.txt' % self.magic_number)
 
     def run(self):
         time.sleep(1)
@@ -63,8 +63,8 @@ class Data(luigi1.Task):
             f.write('%s' % self.magic_number)
 
 
-class Dynamic(luigi1.Task):
-    seed = luigi1.IntParameter(default=1)
+class Dynamic(luigi.Task):
+    seed = luigi.IntParameter(default=1)
 
     def output(self):
         """
@@ -74,7 +74,7 @@ class Dynamic(luigi1.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi1.LocalTarget('/tmp/Dynamic_%d.txt' % self.seed)
+        return luigi.LocalTarget('/tmp/Dynamic_%d.txt' % self.seed)
 
     def run(self):
         # This could be done using regular requires method
@@ -93,4 +93,4 @@ class Dynamic(luigi1.Task):
 
 
 if __name__ == '__main__':
-    luigi1.run()
+    luigi.run()

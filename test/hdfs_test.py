@@ -22,26 +22,26 @@ from datetime import datetime
 import random
 
 import helpers
-import luigi1
+import luigi
 import mock
-import luigi1.format
-from luigi1 import hdfs
-from luigi1 import six
+import luigi.format
+from luigi import hdfs
+from luigi import six
 from minicluster import MiniClusterTestCase
 from nose.plugins.attrib import attr
 
 from target_test import FileSystemTargetTestMixin
 
 
-class ComplexOldFormat(luigi1.format.Format):
+class ComplexOldFormat(luigi.format.Format):
     """Should take unicode but output bytes
     """
 
     def hdfs_writer(self, output_pipe):
-        return self.pipe_writer(luigi1.hdfs.Plain.hdfs_writer(output_pipe))
+        return self.pipe_writer(luigi.hdfs.Plain.hdfs_writer(output_pipe))
 
     def pipe_writer(self, output_pipe):
-        return luigi1.format.UTF8.pipe_writer(output_pipe)
+        return luigi.format.UTF8.pipe_writer(output_pipe)
 
     def pipe_reader(self, output_pipe):
         return output_pipe
@@ -105,7 +105,7 @@ class ErrorHandling(MiniClusterTestCase):
             self.fs.mkdir(path)
         self.assertTrue(self.fs.exists(path))
         self.assertRaises(
-            luigi1.target.FileAlreadyExists,
+            luigi.target.FileAlreadyExists,
             functools.partial(self.fs.mkdir, parents=False, raise_if_exists=True),
             path
         )
@@ -475,7 +475,7 @@ class HdfsClientTest(MiniClusterTestCase):
         local_path = "%s/%s" % (local_dir, local_filename)
         target_path = self._test_dir()
 
-        local_target = luigi1.LocalTarget(local_path)
+        local_target = luigi.LocalTarget(local_path)
         target = self.put_file(local_target, local_filename, target_path)
         self.assertTrue(target.exists())
         local_target.remove()
@@ -486,13 +486,13 @@ class HdfsClientTest(MiniClusterTestCase):
         local_path = "%s/%s" % (local_dir, local_filename)
         target_path = self._test_dir()
 
-        local_target = luigi1.LocalTarget(local_path)
+        local_target = luigi.LocalTarget(local_path)
         target = self.put_file(local_target, local_filename, target_path)
         self.assertTrue(target.exists())
         local_target.remove()
 
         local_copy_path = "%s/file1.dat.cp" % local_dir
-        local_copy = luigi1.LocalTarget(local_copy_path)
+        local_copy = luigi.LocalTarget(local_copy_path)
         if local_copy.exists():
             local_copy.remove()
         self.fs.get(target.path, local_copy_path)
@@ -507,18 +507,18 @@ class HdfsClientTest(MiniClusterTestCase):
         local_path2 = "%s/%s" % (local_dir, local_filename2)
         target_dir = self._test_dir()
 
-        local_target1 = luigi1.LocalTarget(local_path1)
+        local_target1 = luigi.LocalTarget(local_path1)
         target1 = self.put_file(local_target1, local_filename1, target_dir)
         self.assertTrue(target1.exists())
         local_target1.remove()
 
-        local_target2 = luigi1.LocalTarget(local_path2)
+        local_target2 = luigi.LocalTarget(local_path2)
         target2 = self.put_file(local_target2, local_filename2, target_dir)
         self.assertTrue(target2.exists())
         local_target2.remove()
 
         local_copy_path = "%s/file.dat.cp" % (local_dir)
-        local_copy = luigi1.LocalTarget(local_copy_path)
+        local_copy = luigi.LocalTarget(local_copy_path)
         if local_copy.exists():
             local_copy.remove()
         self.fs.getmerge(target_dir, local_copy_path)
@@ -526,7 +526,7 @@ class HdfsClientTest(MiniClusterTestCase):
         local_copy.remove()
 
         local_copy_crc_path = "%s/.file.dat.cp.crc" % (local_dir)
-        local_copy_crc = luigi1.LocalTarget(local_copy_crc_path)
+        local_copy_crc = luigi.LocalTarget(local_copy_crc_path)
         self.assertTrue(local_copy_crc.exists())
         local_copy_crc.remove()
 
@@ -537,27 +537,27 @@ class HdfsClientTest(MiniClusterTestCase):
 
         local_filename1 = "file1.dat"
         local_path1 = "%s/%s" % (local_dir, local_filename1)
-        local_target1 = luigi1.LocalTarget(local_path1)
+        local_target1 = luigi.LocalTarget(local_path1)
         target1 = self.put_file(local_target1, local_filename1, target_dir)
         self.assertTrue(target1.exists())
 
         local_filename2 = "file2.dat"
         local_path2 = "%s/%s" % (local_dir, local_filename2)
-        local_target2 = luigi1.LocalTarget(local_path2)
+        local_target2 = luigi.LocalTarget(local_path2)
         target2 = self.put_file(local_target2, local_filename2,
                                 target_dir, delpath=False)
         self.assertTrue(target2.exists())
 
         local_filename3 = "file3.dat"
         local_path3 = "%s/%s" % (local_dir, local_filename3)
-        local_target3 = luigi1.LocalTarget(local_path3)
+        local_target3 = luigi.LocalTarget(local_path3)
         target3 = self.put_file(local_target3, local_filename3,
                                 target_dir + '/sub1')
         self.assertTrue(target3.exists())
 
         local_filename4 = "file4.dat"
         local_path4 = "%s/%s" % (local_dir, local_filename4)
-        local_target4 = luigi1.LocalTarget(local_path4)
+        local_target4 = luigi.LocalTarget(local_path4)
         target4 = self.put_file(local_target4, local_filename4,
                                 target_dir + '/sub2')
         self.assertTrue(target4.exists())
@@ -694,7 +694,7 @@ class HdfsClientTest(MiniClusterTestCase):
 
     @mock.patch('luigi.hdfs.call_check')
     def test_cdh3_client(self, call_check):
-        cdh3_client = luigi1.hdfs.HdfsClientCdh3()
+        cdh3_client = luigi.hdfs.HdfsClientCdh3()
         cdh3_client.remove("/some/path/here")
         self.assertEqual(['fs', '-rmr', '/some/path/here'], call_check.call_args[0][0][-3:])
 
@@ -711,7 +711,7 @@ class HdfsClientTest(MiniClusterTestCase):
         preturn.communicate = comm
         popen.return_value = preturn
 
-        apache_client = luigi1.hdfs.HdfsClientApache1()
+        apache_client = luigi.hdfs.HdfsClientApache1()
         returned = apache_client.exists("/some/path/somewhere")
         self.assertTrue(returned)
 
@@ -720,7 +720,7 @@ class HdfsClientTest(MiniClusterTestCase):
         self.assertFalse(returned)
 
         preturn.returncode = 13
-        self.assertRaises(luigi1.hdfs.HDFSCliError, apache_client.exists, "/some/path/somewhere")
+        self.assertRaises(luigi.hdfs.HDFSCliError, apache_client.exists, "/some/path/somewhere")
 
 
 class SnakebiteConfigTest(unittest.TestCase):
@@ -729,10 +729,10 @@ class SnakebiteConfigTest(unittest.TestCase):
         # See #743
         self.assertEqual(hdfs.hdfs().snakebite_autoconfig, True)
 
-        class DummyTestTask(luigi1.Task):
+        class DummyTestTask(luigi.Task):
             pass
 
-        luigi1.run(['--local-scheduler', '--no-lock', 'DummyTestTask'])
+        luigi.run(['--local-scheduler', '--no-lock', 'DummyTestTask'])
 
         self.assertEqual(hdfs.hdfs().snakebite_autoconfig, True)
 
@@ -743,7 +743,7 @@ class _MiscOperationsMixin(object):
 
     def get_target(self):
         fn = '/tmp/foo-%09d' % random.randint(0, 999999999)
-        t = luigi1.hdfs.HdfsTarget(fn)
+        t = luigi.hdfs.HdfsTarget(fn)
         with t.open('w') as f:
             f.write('test')
         return t
@@ -766,7 +766,7 @@ class _MiscOperationsMixin(object):
 @attr('minicluster')
 class TestCliMisc(MiniClusterTestCase, _MiscOperationsMixin):
     def get_client(self):
-        return luigi1.hdfs.create_hadoopcli_client()
+        return luigi.hdfs.create_hadoopcli_client()
 
 
 @attr('minicluster')
@@ -775,4 +775,4 @@ class TestSnakebiteMisc(MiniClusterTestCase, _MiscOperationsMixin):
         if six.PY3:
             raise unittest.SkipTest("snakebite doesn't work on Python yet.")
 
-        return luigi1.hdfs.SnakebiteHdfsClient()
+        return luigi.hdfs.SnakebiteHdfsClient()

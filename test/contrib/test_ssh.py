@@ -27,7 +27,7 @@ import subprocess
 from helpers import unittest
 import target_test
 
-from luigi1.contrib.ssh import RemoteContext, RemoteTarget
+from luigi.contrib.ssh import RemoteContext, RemoteTarget
 
 working_ssh_host = 'localhost'
 # set this to a working ssh host string (e.g. "localhost") to activate integration tests

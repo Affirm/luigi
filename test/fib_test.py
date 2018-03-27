@@ -17,15 +17,15 @@
 
 from helpers import unittest
 
-import luigi1
-import luigi1.interface
-from luigi1.mock import MockTarget
+import luigi
+import luigi.interface
+from luigi.mock import MockTarget
 
 # Calculates Fibonacci numbers :)
 
 
-class Fib(luigi1.Task):
-    n = luigi1.IntParameter(default=100)
+class Fib(luigi.Task):
+    n = luigi.IntParameter(default=100)
 
     def requires(self):
         if self.n >= 2:
@@ -61,7 +61,7 @@ class FibTestBase(unittest.TestCase):
 class FibTest(FibTestBase):
 
     def test_invoke(self):
-        w = luigi1.worker.Worker()
+        w = luigi.worker.Worker()
         w.add(Fib(100))
         w.run()
         w.stop()
@@ -69,16 +69,16 @@ class FibTest(FibTestBase):
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_100'), b'354224848179261915075\n')
 
     def test_cmdline(self):
-        luigi1.run(['--local-scheduler', '--no-lock', 'Fib', '--n', '100'])
+        luigi.run(['--local-scheduler', '--no-lock', 'Fib', '--n', '100'])
 
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_10'), b'55\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_100'), b'354224848179261915075\n')
 
     def test_build_internal(self):
-        luigi1.build([Fib(100)], local_scheduler=True)
+        luigi.build([Fib(100)], local_scheduler=True)
 
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_10'), b'55\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_100'), b'354224848179261915075\n')
 
 if __name__ == '__main__':
-    luigi1.run()
+    luigi.run()

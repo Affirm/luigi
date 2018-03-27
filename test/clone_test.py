@@ -17,15 +17,15 @@
 
 from helpers import unittest
 
-import luigi1
-import luigi1.notifications
+import luigi
+import luigi.notifications
 
-luigi1.notifications.DEBUG = True
+luigi.notifications.DEBUG = True
 
 
-class LinearSum(luigi1.Task):
-    lo = luigi1.IntParameter()
-    hi = luigi1.IntParameter()
+class LinearSum(luigi.Task):
+    lo = luigi.IntParameter()
+    hi = luigi.IntParameter()
 
     def requires(self):
         if self.hi > self.lo:
@@ -45,14 +45,14 @@ class LinearSum(luigi1.Task):
 
 
 class PowerSum(LinearSum):
-    p = luigi1.IntParameter()
+    p = luigi.IntParameter()
 
     def f(self, x):
         return x ** self.p
 
 
 class PowerSum2(PowerSum):
-    q = luigi1.IntParameter(is_global=True, default=7)
+    q = luigi.IntParameter(is_global=True, default=7)
 
 
 class CloneTest(unittest.TestCase):
@@ -64,15 +64,15 @@ class CloneTest(unittest.TestCase):
 
     def test_recursion(self):
         t = LinearSum(lo=42, hi=45)
-        luigi1.build([t], local_scheduler=True)
+        luigi.build([t], local_scheduler=True)
         self.assertEqual(t.s, 42 + 43 + 44)
 
     def test_inheritance(self):
         t = PowerSum(lo=42, hi=45, p=2)
-        luigi1.build([t], local_scheduler=True)
+        luigi.build([t], local_scheduler=True)
         self.assertEqual(t.s, 42 ** 2 + 43 ** 2 + 44 ** 2)
 
     def test_inheritance_and_global(self):
         t = PowerSum2(lo=42, hi=45, p=2)
-        luigi1.build([t], local_scheduler=True)
+        luigi.build([t], local_scheduler=True)
         self.assertEqual(t.s, 42 ** 2 + 43 ** 2 + 44 ** 2)

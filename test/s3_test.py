@@ -26,8 +26,8 @@ from helpers import with_config, unittest
 from boto.exception import S3ResponseError
 from boto.s3 import key
 from moto import mock_s3
-from luigi1 import configuration
-from luigi1.s3 import FileNotFoundException, InvalidDeleteException, S3Client, S3Target
+from luigi import configuration
+from luigi.s3 import FileNotFoundException, InvalidDeleteException, S3Client, S3Target
 
 if (3, 4, 0) <= sys.version_info[:3] < (3, 4, 3):
     # spulec/moto#308

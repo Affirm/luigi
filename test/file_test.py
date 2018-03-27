@@ -24,9 +24,9 @@ import shutil
 from helpers import unittest
 import mock
 
-import luigi1.format
-from luigi1 import LocalTarget
-from luigi1.file import LocalFileSystem
+import luigi.format
+from luigi import LocalTarget
+from luigi.file import LocalFileSystem
 from target_test import FileSystemTargetTestMixin
 
 
@@ -60,7 +60,7 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
         self.assertEqual(t.exists(), os.path.exists(self.path))
 
     def test_gzip_with_module(self):
-        t = LocalTarget(self.path, luigi1.format.Gzip)
+        t = LocalTarget(self.path, luigi.format.Gzip)
         p = t.open('w')
         test_data = b'test'
         p.write(test_data)
@@ -75,12 +75,12 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
         f.close()
 
         # Verifying our own gzip reader
-        f = LocalTarget(self.path, luigi1.format.Gzip).open('r')
+        f = LocalTarget(self.path, luigi.format.Gzip).open('r')
         self.assertTrue(test_data == f.read())
         f.close()
 
     def test_bzip2(self):
-        t = LocalTarget(self.path, luigi1.format.Bzip2)
+        t = LocalTarget(self.path, luigi.format.Bzip2)
         p = t.open('w')
         test_data = b'test'
         p.write(test_data)
@@ -95,7 +95,7 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
         f.close()
 
         # Verifying our own bzip2 reader
-        f = LocalTarget(self.path, luigi1.format.Bzip2).open('r')
+        f = LocalTarget(self.path, luigi.format.Bzip2).open('r')
         self.assertTrue(test_data == f.read())
         f.close()
 
@@ -125,8 +125,8 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
         self.assertTrue(os.path.exists(self.copy))
 
     def test_format_chain(self):
-        UTF8WIN = luigi1.format.TextFormat(encoding='utf8', newline='\r\n')
-        t = LocalTarget(self.path, UTF8WIN >> luigi1.format.Gzip)
+        UTF8WIN = luigi.format.TextFormat(encoding='utf8', newline='\r\n')
+        t = LocalTarget(self.path, UTF8WIN >> luigi.format.Gzip)
         a = u'我é\nçф'
 
         with t.open('w') as f:
@@ -139,7 +139,7 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
         self.assertEqual(b'\xe6\x88\x91\xc3\xa9\r\n\xc3\xa7\xd1\x84', b)
 
     def test_format_chain_reverse(self):
-        t = LocalTarget(self.path, luigi1.format.UTF8 >> luigi1.format.Gzip)
+        t = LocalTarget(self.path, luigi.format.UTF8 >> luigi.format.Gzip)
 
         f = gzip.open(self.path, 'wb')
         f.write(b'\xe6\x88\x91\xc3\xa9\r\n\xc3\xa7\xd1\x84')
@@ -152,7 +152,7 @@ class LocalTargetTest(unittest.TestCase, FileSystemTargetTestMixin):
 
     @mock.patch('os.linesep', '\r\n')
     def test_format_newline(self):
-        t = LocalTarget(self.path, luigi1.format.SysNewLine)
+        t = LocalTarget(self.path, luigi.format.SysNewLine)
 
         with t.open('w') as f:
             f.write(b'a\rb\nc\r\nd')
@@ -225,5 +225,5 @@ class TestFileSystem(unittest.TestCase):
 class TestImportFile(unittest.TestCase):
 
     def test_file(self):
-        from luigi1.file import File
+        from luigi.file import File
         self.assertTrue(isinstance(File('foo'), LocalTarget))

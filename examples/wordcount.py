@@ -14,17 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from luigi1 import six
+from luigi import six
 
-import luigi1
+import luigi
 
 
-class InputText(luigi1.ExternalTask):
+class InputText(luigi.ExternalTask):
     """
     This class represents something that was created elsewhere by an external process,
     so all we want to do is to implement the output method.
     """
-    date = luigi1.DateParameter()
+    date = luigi.DateParameter()
 
     def output(self):
         """
@@ -34,11 +34,11 @@ class InputText(luigi1.ExternalTask):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi1.LocalTarget(self.date.strftime('/var/tmp/text/%Y-%m-%d.txt'))
+        return luigi.LocalTarget(self.date.strftime('/var/tmp/text/%Y-%m-%d.txt'))
 
 
-class WordCount(luigi1.Task):
-    date_interval = luigi1.DateIntervalParameter()
+class WordCount(luigi.Task):
+    date_interval = luigi.DateIntervalParameter()
 
     def requires(self):
         """
@@ -58,7 +58,7 @@ class WordCount(luigi1.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`luigi.target.Target`)
         """
-        return luigi1.LocalTarget('/var/tmp/text-count/%s' % self.date_interval)
+        return luigi.LocalTarget('/var/tmp/text-count/%s' % self.date_interval)
 
     def run(self):
         """
@@ -80,4 +80,4 @@ class WordCount(luigi1.Task):
         f.close()  # WARNING: file system operations are atomic therefore if you don't close the file you lose all data
 
 if __name__ == '__main__':
-    luigi1.run(main_task_cls=WordCount)
+    luigi.run(main_task_cls=WordCount)

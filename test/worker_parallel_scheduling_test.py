@@ -19,28 +19,28 @@ import pickle
 import time
 from helpers import unittest
 
-import luigi1
+import luigi
 import mock
-from luigi1.worker import Worker
+from luigi.worker import Worker
 
 
-class SlowCompleteWrapper(luigi1.WrapperTask):
+class SlowCompleteWrapper(luigi.WrapperTask):
 
     def requires(self):
         return [SlowCompleteTask(i) for i in range(4)]
 
 
-class SlowCompleteTask(luigi1.Task):
-    n = luigi1.IntParameter()
+class SlowCompleteTask(luigi.Task):
+    n = luigi.IntParameter()
 
     def complete(self):
         time.sleep(0.1)
         return True
 
 
-class OverlappingSelfDependenciesTask(luigi1.Task):
-    n = luigi1.IntParameter()
-    k = luigi1.IntParameter()
+class OverlappingSelfDependenciesTask(luigi.Task):
+    n = luigi.IntParameter()
+    k = luigi.IntParameter()
 
     def complete(self):
         return self.n < self.k or self.k == 0
@@ -49,19 +49,19 @@ class OverlappingSelfDependenciesTask(luigi1.Task):
         return [OverlappingSelfDependenciesTask(self.n - 1, k) for k in range(self.k + 1)]
 
 
-class ExceptionCompleteTask(luigi1.Task):
+class ExceptionCompleteTask(luigi.Task):
 
     def complete(self):
         assert False
 
 
-class ExceptionRequiresTask(luigi1.Task):
+class ExceptionRequiresTask(luigi.Task):
 
     def requires(self):
         assert False
 
 
-class UnpicklableExceptionTask(luigi1.Task):
+class UnpicklableExceptionTask(luigi.Task):
 
     def complete(self):
         class UnpicklableException(Exception):

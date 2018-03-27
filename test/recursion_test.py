@@ -20,13 +20,13 @@ import datetime
 import sys
 from helpers import unittest
 
-import luigi1
-import luigi1.interface
-from luigi1.mock import MockTarget
+import luigi
+import luigi.interface
+from luigi.mock import MockTarget
 
 
-class Popularity(luigi1.Task):
-    date = luigi1.DateParameter(default=datetime.date.today() - datetime.timedelta(1))
+class Popularity(luigi.Task):
+    date = luigi.DateParameter(default=datetime.date.today() - datetime.timedelta(1))
 
     def output(self):
         return MockTarget('/tmp/popularity/%s.txt' % self.date.strftime('%Y-%m-%d'))
@@ -48,7 +48,7 @@ class RecursionTest(unittest.TestCase):
         MockTarget.fs.get_all_data()['/tmp/popularity/2009-01-01.txt'] = b'0\n'
 
     def test_invoke(self):
-        w = luigi1.worker.Worker()
+        w = luigi.worker.Worker()
         w.add(Popularity(datetime.date(2010, 1, 1)))
         w.run()
         w.stop()

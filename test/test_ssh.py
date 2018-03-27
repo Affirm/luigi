@@ -18,7 +18,7 @@
 import subprocess
 from helpers import unittest
 
-from luigi1.contrib.ssh import RemoteContext
+from luigi.contrib.ssh import RemoteContext
 
 
 class TestMockedRemoteContext(unittest.TestCase):

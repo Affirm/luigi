@@ -15,15 +15,15 @@
 # limitations under the License.
 #
 
-import luigi1
+import luigi
 from fib_test import FibTestBase
-from luigi1.mock import MockTarget
+from luigi.mock import MockTarget
 
 
 class OptParseTest(FibTestBase):
 
     def test_cmdline_optparse(self):
-        luigi1.run(['--local-scheduler', '--no-lock', '--task', 'Fib', '--n', '100'], use_optparse=True)
+        luigi.run(['--local-scheduler', '--no-lock', '--task', 'Fib', '--n', '100'], use_optparse=True)
 
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_10'), b'55\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_100'), b'354224848179261915075\n')
@@ -33,7 +33,7 @@ class OptParseTest(FibTestBase):
         parser = optparse.OptionParser()
         parser.add_option('--blaha')
 
-        luigi1.run(['--local-scheduler', '--no-lock', '--task', 'Fib', '--n', '100'], use_optparse=True, existing_optparse=parser)
+        luigi.run(['--local-scheduler', '--no-lock', '--task', 'Fib', '--n', '100'], use_optparse=True, existing_optparse=parser)
 
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_10'), b'55\n')
         self.assertEqual(MockTarget.fs.get_data('/tmp/fib_100'), b'354224848179261915075\n')

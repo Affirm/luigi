@@ -18,7 +18,7 @@ from __future__ import print_function
 
 from helpers import unittest
 
-from luigi1.mock import MockTarget, MockFileSystem
+from luigi.mock import MockTarget, MockFileSystem
 
 
 class MockFileTest(unittest.TestCase):
@@ -86,5 +86,5 @@ class MockFileSystemTest(unittest.TestCase):
 class TestImportMockFile(unittest.TestCase):
 
     def test_mockfile(self):
-        from luigi1.mock import MockFile
+        from luigi.mock import MockFile
         self.assertTrue(isinstance(MockFile('foo'), MockTarget))

@@ -17,21 +17,21 @@
 
 from helpers import unittest
 
-from luigi1 import six
+from luigi import six
 
 from helpers import with_config
-import luigi1
-from luigi1.db_task_history import DbTaskHistory
-from luigi1.task_status import DONE, PENDING, RUNNING
+import luigi
+from luigi.db_task_history import DbTaskHistory
+from luigi.task_status import DONE, PENDING, RUNNING
 
 
-class DummyTask(luigi1.Task):
-    foo = luigi1.Parameter(default='foo')
+class DummyTask(luigi.Task):
+    foo = luigi.Parameter(default='foo')
 
 
-class ParamTask(luigi1.Task):
-    param1 = luigi1.Parameter()
-    param2 = luigi1.IntParameter()
+class ParamTask(luigi.Task):
+    param1 = luigi.Parameter()
+    param2 = luigi.IntParameter()
 
 
 class DbTaskHistoryTest(unittest.TestCase):

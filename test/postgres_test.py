@@ -13,9 +13,9 @@
 # the License.
 
 import datetime
-import luigi1
-import luigi1.postgres
-from luigi1.tools.range import RangeDaily
+import luigi
+import luigi.postgres
+from luigi.tools.range import RangeDaily
 from helpers import unittest
 import mock
 
@@ -43,8 +43,8 @@ class MockPostgresCursor(mock.Mock):
         return self.fetchone_result
 
 
-class DummyPostgresImporter(luigi1.postgres.CopyToTable):
-    date = luigi1.DateParameter()
+class DummyPostgresImporter(luigi.postgres.CopyToTable):
+    date = luigi.DateParameter()
 
     host = 'dummy_host'
     database = 'dummy_database'

@@ -19,22 +19,22 @@ import datetime
 import fnmatch
 from helpers import unittest
 
-import luigi1
+import luigi
 import mock
-from luigi1.mock import MockTarget, MockFileSystem
-from luigi1.tools.range import (RangeDaily, RangeDailyBase, RangeEvent, RangeHourly, RangeHourlyBase, _constrain_glob,
-                                _get_filesystems_and_globs)
+from luigi.mock import MockTarget, MockFileSystem
+from luigi.tools.range import (RangeDaily, RangeDailyBase, RangeEvent, RangeHourly, RangeHourlyBase, _constrain_glob,
+                               _get_filesystems_and_globs)
 
 
-class CommonDateHourTask(luigi1.Task):
-    dh = luigi1.DateHourParameter()
+class CommonDateHourTask(luigi.Task):
+    dh = luigi.DateHourParameter()
 
     def output(self):
         return MockTarget(self.dh.strftime('/n2000y01a05n/%Y_%m-_-%daww/21mm%Hdara21/ooo'))
 
 
-class CommonDateTask(luigi1.Task):
-    d = luigi1.DateParameter()
+class CommonDateTask(luigi.Task):
+    d = luigi.DateParameter()
 
     def output(self):
         return MockTarget(self.d.strftime('/n2000y01a05n/%Y_%m-_-%daww/21mm01dara21/ooo'))
@@ -88,30 +88,30 @@ expected_wrapper = [
 ]
 
 
-class TaskA(luigi1.Task):
-    dh = luigi1.DateHourParameter()
+class TaskA(luigi.Task):
+    dh = luigi.DateHourParameter()
 
     def output(self):
         return MockTarget(self.dh.strftime('TaskA/%Y-%m-%d/%H'))
 
 
-class TaskB(luigi1.Task):
-    dh = luigi1.DateHourParameter()
-    complicator = luigi1.Parameter()
+class TaskB(luigi.Task):
+    dh = luigi.DateHourParameter()
+    complicator = luigi.Parameter()
 
     def output(self):
         return MockTarget(self.dh.strftime('TaskB/%%s%Y-%m-%d/%H') % self.complicator)
 
 
-class TaskC(luigi1.Task):
-    dh = luigi1.DateHourParameter()
+class TaskC(luigi.Task):
+    dh = luigi.DateHourParameter()
 
     def output(self):
         return MockTarget(self.dh.strftime('not/a/real/path/%Y-%m-%d/%H'))
 
 
-class CommonWrapperTask(luigi1.WrapperTask):
-    dh = luigi1.DateHourParameter()
+class CommonWrapperTask(luigi.WrapperTask):
+    dh = luigi.DateHourParameter()
 
     def requires(self):
         yield TaskA(dh=self.dh)
@@ -496,8 +496,8 @@ class FilesystemInferenceTest(unittest.TestCase):
         )
 
     def test_inconsistent_output_datehour_glob_not_inferred(self):
-        class InconsistentlyOutputtingDateHourTask(luigi1.Task):
-            dh = luigi1.DateHourParameter()
+        class InconsistentlyOutputtingDateHourTask(luigi.Task):
+            dh = luigi.DateHourParameter()
 
             def output(self):
                 base = self.dh.strftime('/even/%Y%m%d%H')
@@ -517,8 +517,8 @@ class FilesystemInferenceTest(unittest.TestCase):
         self.assertRaises(NotImplementedError, test_raise_not_implemented)
 
     def test_wrapped_inconsistent_datehour_globs_not_inferred(self):
-        class InconsistentlyParameterizedWrapperTask(luigi1.WrapperTask):
-            dh = luigi1.DateHourParameter()
+        class InconsistentlyParameterizedWrapperTask(luigi.WrapperTask):
+            dh = luigi.DateHourParameter()
 
             def requires(self):
                 yield TaskA(dh=self.dh - datetime.timedelta(days=1))
@@ -535,8 +535,8 @@ class FilesystemInferenceTest(unittest.TestCase):
 class RangeDailyTest(unittest.TestCase):
 
     def test_bulk_complete_correctly_interfaced(self):
-        class BulkCompleteDailyTask(luigi1.Task):
-            d = luigi1.DateParameter()
+        class BulkCompleteDailyTask(luigi.Task):
+            d = luigi.DateParameter()
 
             @classmethod
             def bulk_complete(self, parameter_tuples):
@@ -567,8 +567,8 @@ class RangeDailyTest(unittest.TestCase):
     @mock.patch('luigi.mock.MockFileSystem.exists',
                 new=mock_exists_always_true)
     def test_missing_tasks_correctly_required(self):
-        class SomeDailyTask(luigi1.Task):
-            d = luigi1.DateParameter()
+        class SomeDailyTask(luigi.Task):
+            d = luigi.DateParameter()
 
             def output(self):
                 return MockTarget(self.d.strftime('/data/2014/p/v/z/%Y_/_%m-_-%doctor/20/ZOOO'))
@@ -617,8 +617,8 @@ class RangeHourlyTest(unittest.TestCase):
         self.assertEqual(actual, expected_wrapper)
 
     def test_bulk_complete_correctly_interfaced(self):
-        class BulkCompleteHourlyTask(luigi1.Task):
-            dh = luigi1.DateHourParameter()
+        class BulkCompleteHourlyTask(luigi.Task):
+            dh = luigi.DateHourParameter()
 
             @classmethod
             def bulk_complete(cls, parameter_tuples):

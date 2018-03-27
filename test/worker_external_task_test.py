@@ -12,21 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import luigi1
-from luigi1.file import LocalTarget
-from luigi1.scheduler import CentralPlannerScheduler
-import luigi1.server
-import luigi1.worker
+import luigi
+from luigi.file import LocalTarget
+from luigi.scheduler import CentralPlannerScheduler
+import luigi.server
+import luigi.worker
 from mock import patch
 from helpers import with_config, unittest
 import os
 import tempfile
 
 
-class TestExternalFileTask(luigi1.ExternalTask):
+class TestExternalFileTask(luigi.ExternalTask):
     """ Mocking tasks is a pain, so touch a file instead """
-    path = luigi1.Parameter()
-    times_to_call = luigi1.Parameter()
+    path = luigi.Parameter()
+    times_to_call = luigi.Parameter()
 
     def __init__(self, *args, **kwargs):
         super(TestExternalFileTask, self).__init__(*args, **kwargs)
@@ -47,12 +47,12 @@ class TestExternalFileTask(luigi1.ExternalTask):
         return LocalTarget(path=self.path)
 
 
-class TestTask(luigi1.Task):
+class TestTask(luigi.Task):
     """
     Requires a single file dependency
     """
-    tempdir = luigi1.Parameter()
-    complete_after = luigi1.Parameter()
+    tempdir = luigi.Parameter()
+    complete_after = luigi.Parameter()
 
     def __init__(self, *args, **kwargs):
         super(TestTask, self).__init__(*args, **kwargs)
@@ -87,7 +87,7 @@ class WorkerExternalTaskTest(unittest.TestCase):
             self.assert_(t.complete())
 
     def _build(self, tasks):
-        w = luigi1.worker.Worker(scheduler=self.scheduler, worker_processes=1)
+        w = luigi.worker.Worker(scheduler=self.scheduler, worker_processes=1)
         for t in tasks:
             w.add(t)
         success = w.run()
@@ -124,9 +124,9 @@ class WorkerExternalTaskTest(unittest.TestCase):
         becomes `complete` while the workflow is executing is re-evaluated and
         allows dependencies to run.
         """
-        assert luigi1.configuration.get_config().getboolean('core',
+        assert luigi.configuration.get_config().getboolean('core',
                                                            'retry-external-tasks',
-                                                            False) is True
+                                                           False) is True
 
         original_get_work = self.scheduler.get_work
 

@@ -18,7 +18,7 @@
 import getpass
 import os
 
-from luigi1 import hadoop, hdfs
+from luigi import hadoop, hdfs
 from nose.plugins.attrib import attr
 
 import unittest

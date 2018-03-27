@@ -21,7 +21,7 @@ import posixpath
 import time
 from helpers import unittest
 
-from luigi1.contrib import webhdfs
+from luigi.contrib import webhdfs
 
 
 class TestWebHdfsTarget(unittest.TestCase):

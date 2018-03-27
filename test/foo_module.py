@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-import luigi1
+import luigi
 
 
-class FooTask(luigi1.Task):
-    x = luigi1.IntParameter()
+class FooTask(luigi.Task):
+    x = luigi.IntParameter()

@@ -25,7 +25,7 @@ try:
 except ImportError:
     from io import StringIO
 
-from luigi1.contrib.ftp import RemoteFileSystem, RemoteTarget
+from luigi.contrib.ftp import RemoteFileSystem, RemoteTarget
 
 # dumb files
 FILE1 = """this is file1"""

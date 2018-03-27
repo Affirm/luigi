@@ -17,16 +17,16 @@
 
 from collections import defaultdict
 
-from luigi1 import six
+from luigi import six
 
-import luigi1
-from luigi1.contrib.ssh import RemoteContext, RemoteTarget
-from luigi1.mock import MockFile
+import luigi
+from luigi.contrib.ssh import RemoteContext, RemoteTarget
+from luigi.mock import MockFile
 
 SSH_HOST = "some.accessible.host"
 
 
-class CreateRemoteData(luigi1.Task):
+class CreateRemoteData(luigi.Task):
     """
     Dump info on running processes on remote host.
     Data is still stored on the remote host
@@ -52,7 +52,7 @@ class CreateRemoteData(luigi1.Task):
         ])
 
 
-class ProcessRemoteData(luigi1.Task):
+class ProcessRemoteData(luigi.Task):
     """
     Create a toplist of users based on how many running processes they have on a remote machine.
 
@@ -98,4 +98,4 @@ class ProcessRemoteData(luigi1.Task):
 
 
 if __name__ == "__main__":
-    luigi1.run()
+    luigi.run()

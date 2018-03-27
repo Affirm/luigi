@@ -20,13 +20,13 @@ from helpers import unittest
 
 import sys
 
-import luigi1
-import luigi1.notifications
+import luigi
+import luigi.notifications
 
-from luigi1.contrib import redshift
+from luigi.contrib import redshift
 from moto import mock_s3
 from boto.s3.key import Key
-from luigi1.s3 import S3Client
+from luigi.s3 import S3Client
 
 
 if (3, 4, 0) <= sys.version_info[:3] < (3, 4, 3):
@@ -34,7 +34,7 @@ if (3, 4, 0) <= sys.version_info[:3] < (3, 4, 3):
     mock_s3 = unittest.skip('moto mock doesn\'t work with python3.4')
 
 
-luigi1.notifications.DEBUG = True
+luigi.notifications.DEBUG = True
 
 AWS_ACCESS_KEY = 'key'
 AWS_SECRET_KEY = 'secret'
@@ -72,7 +72,7 @@ class TestRedshiftManifestTask(unittest.TestCase):
         path = 's3://%s/%s/%s' % (BUCKET, k.key, 'test.manifest')
         folder_paths = [folder_path]
         t = redshift.RedshiftManifestTask(path, folder_paths)
-        luigi1.build([t], local_scheduler=True)
+        luigi.build([t], local_scheduler=True)
 
         output = t.output().open('r').read()
         expected_manifest_output = json.dumps(generate_manifest_json(folder_paths, FILES))
@@ -94,7 +94,7 @@ class TestRedshiftManifestTask(unittest.TestCase):
         k.key = 'manifest'
         path = 's3://%s/%s/%s' % (BUCKET, k.key, 'test.manifest')
         t = redshift.RedshiftManifestTask(path, folder_paths)
-        luigi1.build([t], local_scheduler=True)
+        luigi.build([t], local_scheduler=True)
 
         output = t.output().open('r').read()
         expected_manifest_output = json.dumps(generate_manifest_json(folder_paths, FILES))

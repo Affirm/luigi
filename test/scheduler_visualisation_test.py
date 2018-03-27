@@ -21,29 +21,29 @@ import tempfile
 import time
 from helpers import unittest
 
-import luigi1
-import luigi1.notifications
-import luigi1.scheduler
-import luigi1.worker
+import luigi
+import luigi.notifications
+import luigi.scheduler
+import luigi.worker
 
-luigi1.notifications.DEBUG = True
+luigi.notifications.DEBUG = True
 
 tempdir = tempfile.mkdtemp()
 
 
-class DummyTask(luigi1.Task):
-    task_id = luigi1.Parameter()
+class DummyTask(luigi.Task):
+    task_id = luigi.Parameter()
 
     def run(self):
         f = self.output().open('w')
         f.close()
 
     def output(self):
-        return luigi1.LocalTarget(os.path.join(tempdir, str(self.task_id)))
+        return luigi.LocalTarget(os.path.join(tempdir, str(self.task_id)))
 
 
-class FactorTask(luigi1.Task):
-    product = luigi1.Parameter()
+class FactorTask(luigi.Task):
+    product = luigi.Parameter()
 
     def requires(self):
         for factor in range(2, self.product):
@@ -57,11 +57,11 @@ class FactorTask(luigi1.Task):
         f.close()
 
     def output(self):
-        return luigi1.LocalTarget(os.path.join(tempdir, 'luigi_test_factor_%d' % self.product))
+        return luigi.LocalTarget(os.path.join(tempdir, 'luigi_test_factor_%d' % self.product))
 
 
-class BadReqTask(luigi1.Task):
-    succeed = luigi1.BoolParameter()
+class BadReqTask(luigi.Task):
+    succeed = luigi.BoolParameter()
 
     def requires(self):
         assert self.succeed
@@ -74,8 +74,8 @@ class BadReqTask(luigi1.Task):
         return False
 
 
-class FailingTask(luigi1.Task):
-    task_id = luigi1.Parameter()
+class FailingTask(luigi.Task):
+    task_id = luigi.Parameter()
 
     def run(self):
         raise Exception("Error Message")
@@ -91,7 +91,7 @@ class SchedulerVisualisationTest(unittest.TestCase):
         self.assertTrue(a <= b)
 
     def setUp(self):
-        self.scheduler = luigi1.scheduler.CentralPlannerScheduler()
+        self.scheduler = luigi.scheduler.CentralPlannerScheduler()
 
     def tearDown(self):
         pass
@@ -101,7 +101,7 @@ class SchedulerVisualisationTest(unittest.TestCase):
             self.assert_(t.complete())
 
     def _build(self, tasks):
-        w = luigi1.worker.Worker(scheduler=self.scheduler, worker_processes=1)
+        w = luigi.worker.Worker(scheduler=self.scheduler, worker_processes=1)
         for t in tasks:
             w.add(t)
         w.run()
@@ -242,30 +242,30 @@ class SchedulerVisualisationTest(unittest.TestCase):
         self.assertEqual(remote.task_list('PENDING', ''), {})
 
     def test_task_list_upstream_status(self):
-        class A(luigi1.ExternalTask):
+        class A(luigi.ExternalTask):
             pass
 
-        class B(luigi1.ExternalTask):
+        class B(luigi.ExternalTask):
 
             def complete(self):
                 return True
 
-        class C(luigi1.Task):
+        class C(luigi.Task):
 
             def requires(self):
                 return [A(), B()]
 
-        class F(luigi1.Task):
+        class F(luigi.Task):
 
             def run(self):
                 raise Exception()
 
-        class D(luigi1.Task):
+        class D(luigi.Task):
 
             def requires(self):
                 return [F()]
 
-        class E(luigi1.Task):
+        class E(luigi.Task):
 
             def requires(self):
                 return [C(), D()]
@@ -334,21 +334,21 @@ class SchedulerVisualisationTest(unittest.TestCase):
         self.assertTrue("Traceback" in error["error"])
 
     def test_inverse_deps(self):
-        class X(luigi1.Task):
+        class X(luigi.Task):
             pass
 
-        class Y(luigi1.Task):
+        class Y(luigi.Task):
 
             def requires(self):
                 return [X()]
 
-        class Z(luigi1.Task):
-            id = luigi1.Parameter()
+        class Z(luigi.Task):
+            id = luigi.Parameter()
 
             def requires(self):
                 return [Y()]
 
-        class ZZ(luigi1.Task):
+        class ZZ(luigi.Task):
 
             def requires(self):
                 return [Z(1), Z(2)]
@@ -368,7 +368,7 @@ class SchedulerVisualisationTest(unittest.TestCase):
         assert_has_deps('ZZ()', [])
 
     def test_simple_worker_list(self):
-        class X(luigi1.Task):
+        class X(luigi.Task):
 
             def run(self):
                 self._complete = True
@@ -389,7 +389,7 @@ class SchedulerVisualisationTest(unittest.TestCase):
         self.assertEqual(1, worker['workers'])
 
     def test_worker_list_pending_uniques(self):
-        class X(luigi1.Task):
+        class X(luigi.Task):
 
             def complete(self):
                 return False
@@ -402,8 +402,8 @@ class SchedulerVisualisationTest(unittest.TestCase):
         class Z(Y):
             pass
 
-        w1 = luigi1.worker.Worker(scheduler=self.scheduler, worker_processes=1)
-        w2 = luigi1.worker.Worker(scheduler=self.scheduler, worker_processes=1)
+        w1 = luigi.worker.Worker(scheduler=self.scheduler, worker_processes=1)
+        w2 = luigi.worker.Worker(scheduler=self.scheduler, worker_processes=1)
 
         w1.add(Y())
         w2.add(Z())
@@ -416,10 +416,10 @@ class SchedulerVisualisationTest(unittest.TestCase):
             self.assertEqual(0, worker['num_running'])
 
     def test_worker_list_running(self):
-        class X(luigi1.Task):
-            n = luigi1.IntParameter()
+        class X(luigi.Task):
+            n = luigi.IntParameter()
 
-        w = luigi1.worker.Worker(scheduler=self.scheduler, worker_processes=3)
+        w = luigi.worker.Worker(scheduler=self.scheduler, worker_processes=3)
         w.add(X(0))
         w.add(X(1))
         w.add(X(2))

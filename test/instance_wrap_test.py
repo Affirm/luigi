@@ -19,15 +19,15 @@ import datetime
 import decimal
 from helpers import unittest
 
-import luigi1
-import luigi1.notifications
-from luigi1.mock import MockTarget
+import luigi
+import luigi.notifications
+from luigi.mock import MockTarget
 
-luigi1.notifications.DEBUG = True
+luigi.notifications.DEBUG = True
 
 
-class Report(luigi1.Task):
-    date = luigi1.DateParameter()
+class Report(luigi.Task):
+    date = luigi.DateParameter()
 
     def run(self):
         f = self.output().open('w')
@@ -40,8 +40,8 @@ class Report(luigi1.Task):
         return MockTarget(self.date.strftime('/tmp/report-%Y-%m-%d'))
 
 
-class ReportReader(luigi1.Task):
-    date = luigi1.DateParameter()
+class ReportReader(luigi.Task):
+    date = luigi.DateParameter()
 
     def requires(self):
         return Report(self.date)
@@ -57,9 +57,9 @@ class ReportReader(luigi1.Task):
         return False
 
 
-class CurrencyExchanger(luigi1.Task):
-    task = luigi1.Parameter()
-    currency_to = luigi1.Parameter()
+class CurrencyExchanger(luigi.Task):
+    task = luigi.Parameter()
+    currency_to = luigi.Parameter()
 
     exchange_rates = {('USD', 'USD'): decimal.Decimal(1),
                       ('EUR', 'USD'): decimal.Decimal('1.25')}
@@ -95,7 +95,7 @@ class InstanceWrapperTest(unittest.TestCase):
         r = ReportReader(d)
         ex = CurrencyExchanger(r, 'USD')
 
-        w = luigi1.worker.Worker()
+        w = luigi.worker.Worker()
         w.add(ex)
         w.run()
         w.stop()

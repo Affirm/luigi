@@ -17,16 +17,16 @@
 
 import random
 
-import luigi1
-import luigi1.format
-import luigi1.hdfs
-from luigi1.contrib.spark import SparkSubmitTask
+import luigi
+import luigi.format
+import luigi.hdfs
+from luigi.contrib.spark import SparkSubmitTask
 
 
-class UserItemMatrix(luigi1.Task):
+class UserItemMatrix(luigi.Task):
 
     #: the size of the data being generated
-    data_size = luigi1.IntParameter()
+    data_size = luigi.IntParameter()
 
     def run(self):
         """
@@ -54,7 +54,7 @@ class UserItemMatrix(luigi1.Task):
         :return: the target output for this task.
         :rtype: object (:py:class:`~luigi.target.Target`)
         """
-        return luigi1.hdfs.HdfsTarget('data-matrix', format=luigi1.format.Gzip)
+        return luigi.hdfs.HdfsTarget('data-matrix', format=luigi.format.Gzip)
 
 
 class SparkALS(SparkSubmitTask):
@@ -72,11 +72,11 @@ class SparkALS(SparkSubmitTask):
         master: yarn-client
 
     """
-    data_size = luigi1.IntParameter(default=1000)
+    data_size = luigi.IntParameter(default=1000)
 
     driver_memory = '2g'
     executor_memory = '3g'
-    num_executors = luigi1.IntParameter(default=100)
+    num_executors = luigi.IntParameter(default=100)
 
     app = 'my-spark-assembly.jar'
     entry_class = 'com.spotify.spark.ImplicitALS'
@@ -104,7 +104,7 @@ class SparkALS(SparkSubmitTask):
         :rtype: object (:py:class:`~luigi.target.Target`)
         """
         # The corresponding Spark job outputs as GZip format.
-        return luigi1.hdfs.HdfsTarget('%s/als-output/*' % self.item_type, format=luigi1.format.Gzip)
+        return luigi.hdfs.HdfsTarget('%s/als-output/*' % self.item_type, format=luigi.format.Gzip)
 
 
 '''

@@ -17,21 +17,21 @@
 
 from helpers import unittest
 
-import luigi1
-import luigi1.interface
+import luigi
+import luigi.interface
 
 
-class ExtraArgs(luigi1.Task):
-    blah = luigi1.Parameter(is_global=True, default=444)
+class ExtraArgs(luigi.Task):
+    blah = luigi.Parameter(is_global=True, default=444)
 
 
 class CmdlineTest(unittest.TestCase):
 
     def test_dynamic_loading(self):
-        interface = luigi1.interface.ArgParseInterface()
+        interface = luigi.interface.ArgParseInterface()
         self.assertRaises(SystemExit, interface.parse, (['FooTask', '--blah', 'xyz', '--x', '123'],))  # should raise since it's not imported
 
-        interface = luigi1.interface.DynamicArgParseInterface()
+        interface = luigi.interface.DynamicArgParseInterface()
         tasks = interface.parse(['--module', 'foo_module', 'FooTask', '--blah', 'xyz', '--x', '123'])
 
         self.assertEqual(ExtraArgs().blah, 'xyz')
@@ -48,4 +48,4 @@ class CmdlineTest(unittest.TestCase):
     def test_run(self):
         # TODO: this needs to run after the existing module, since by now foo_module is already imported
 
-        luigi1.run(['--local-scheduler', '--no-lock', '--module', 'foo_module', 'FooTask', '--x', '100'], use_dynamic_argparse=True)
+        luigi.run(['--local-scheduler', '--no-lock', '--module', 'foo_module', 'FooTask', '--x', '100'], use_dynamic_argparse=True)

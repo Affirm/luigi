@@ -18,7 +18,7 @@
 import os
 from helpers import unittest
 
-from luigi1.format import InputPipeProcessWrapper
+from luigi.format import InputPipeProcessWrapper
 
 
 BASH_SCRIPT = """

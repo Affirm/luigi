@@ -18,34 +18,34 @@
 import datetime
 from helpers import unittest
 
-import luigi1
-import luigi1.interface
+import luigi
+import luigi.interface
 
 
-class DateMinuteTask(luigi1.Task):
-    dh = luigi1.DateMinuteParameter()
+class DateMinuteTask(luigi.Task):
+    dh = luigi.DateMinuteParameter()
 
 
 class DateMinuteTest(unittest.TestCase):
 
     def test_parse(self):
-        dh = luigi1.DateMinuteParameter().parse('2013-01-01T18H42')
+        dh = luigi.DateMinuteParameter().parse('2013-01-01T18H42')
         self.assertEqual(dh, datetime.datetime(2013, 1, 1, 18, 42, 0))
 
     def test_parse_padding_zero(self):
-        dh = luigi1.DateMinuteParameter().parse('2013-01-01T18H07')
+        dh = luigi.DateMinuteParameter().parse('2013-01-01T18H07')
         self.assertEqual(dh, datetime.datetime(2013, 1, 1, 18, 7, 0))
 
     def test_serialize(self):
-        dh = luigi1.DateMinuteParameter().serialize(datetime.datetime(2013, 1, 1, 18, 42, 0))
+        dh = luigi.DateMinuteParameter().serialize(datetime.datetime(2013, 1, 1, 18, 42, 0))
         self.assertEqual(dh, '2013-01-01T18H42')
 
     def test_serialize_padding_zero(self):
-        dh = luigi1.DateMinuteParameter().serialize(datetime.datetime(2013, 1, 1, 18, 7, 0))
+        dh = luigi.DateMinuteParameter().serialize(datetime.datetime(2013, 1, 1, 18, 7, 0))
         self.assertEqual(dh, '2013-01-01T18H07')
 
     def test_parse_interface(self):
-        task = luigi1.interface.ArgParseInterface().parse(["DateMinuteTask", "--dh", "2013-01-01T18H42"])[0]
+        task = luigi.interface.ArgParseInterface().parse(["DateMinuteTask", "--dh", "2013-01-01T18H42"])[0]
         self.assertEqual(task.dh, datetime.datetime(2013, 1, 1, 18, 42, 0))
 
     def test_serialize_task(self):
