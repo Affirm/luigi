@@ -54,7 +54,7 @@ if sys.version_info[:2] < (2, 7):
 
 setup(
     name='luigi1',
-    version='1.1.2+affirm.1.0.0+obsolete',
+    version='1.1.2+affirm.1.1.0',
     description='Workflow mgmgt + task scheduling + dependency resolution',
     long_description=long_description,
     author='Erik Bernhardsson',
