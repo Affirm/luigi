@@ -710,11 +710,20 @@ class Worker(object):
                 )
             self._batch_families_sent.add(family)
 
+    def _unknown_or_failed(self):
+        # if worker keep-alive is true, let's set UNKNOWN status tasks to failed to let get retried
+        # since this UNKNOWN state causes the worker to spin endlessly anyways, might as well let 
+        # it fail and let the retry window logic handle whether or not the main task fails
+        if self._config.keep_alive:
+            return FAILED
+        else:
+            return UNKNOWN
+
     def _add(self, task, is_complete):
         if self._config.task_limit is not None and len(self._scheduled_tasks) >= self._config.task_limit:
             logger.warning('Will not run %s or any dependencies due to exceeded task-limit of %d', task, self._config.task_limit)
             deps = None
-            status = UNKNOWN
+            status = self._unknown_or_failed()
             runnable = False
 
         else:
@@ -734,7 +743,7 @@ class Worker(object):
                 task.trigger_event(Event.DEPENDENCY_MISSING, task)
                 self._email_complete_error(task, formatted_traceback)
                 deps = None
-                status = UNKNOWN
+                status = self._unknown_or_failed()
                 runnable = False
 
             elif is_complete:
@@ -763,7 +772,7 @@ class Worker(object):
                     task.trigger_event(Event.BROKEN_TASK, task, ex)
                     self._email_dependency_error(task, formatted_traceback)
                     deps = None
-                    status = UNKNOWN
+                    status = self._unknown_or_failed()
                     runnable = False
                 else:
                     status = PENDING

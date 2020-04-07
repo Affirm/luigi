@@ -312,10 +312,10 @@ class StableDoneCooldownSecsTest(unittest.TestCase):
     @with_config({'scheduler': {'stable_done_cooldown_secs': '5'}})
     def test_sending_same_task_twice_with_cooldown_does_not_lead_to_double_run(self):
         second_run_result = self.get_second_run_result_on_double_run()
-        self.assertEqual(second_run_result.scheduling_succeeded, True)
+        self.assertEqual(second_run_result, 0)
 
     @with_config({'scheduler': {'stable_done_cooldown_secs': '0'}})
     def test_sending_same_task_twice_without_cooldown_leads_to_double_run(self):
         second_run_result = self.get_second_run_result_on_double_run()
-        self.assertEqual(second_run_result.scheduling_succeeded, False)
+        self.assertEqual(second_run_result, 4)
 
