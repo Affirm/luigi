@@ -71,10 +71,11 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'luigi = luigi1.cmdline:luigi_run',
-            'luigid = luigi1.cmdline:luigid',
-            'luigi-grep = luigi1.tools.luigi_grep:main',
-            'luigi-deps = luigi1.tools.deps:main',
+            # Remove console scripts as they conflict with luigi2 installation
+            # 'luigi = luigi1.cmdline:luigi_run',
+            # 'luigid = luigi1.cmdline:luigid',
+            # 'luigi-grep = luigi1.tools.luigi_grep:main',
+            # 'luigi-deps = luigi1.tools.deps:main',
         ]
     },
     install_requires=install_requires,
