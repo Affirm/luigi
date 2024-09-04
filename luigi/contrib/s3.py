@@ -105,6 +105,7 @@ class S3Client(FileSystem):
             options['aws_secret_access_key'] = aws_secret_access_key
 
         self._options = options
+        self.uses_boto3 = True
 
     @property
     def s3(self):
