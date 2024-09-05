@@ -94,6 +94,7 @@ class S3Client(FileSystem):
     """
 
     _s3 = None
+    uses_boto3 = True
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  **kwargs):
