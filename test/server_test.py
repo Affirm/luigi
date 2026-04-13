@@ -26,13 +26,13 @@ import luigi.rpc
 import luigi.server
 import luigi.cmdline
 from luigi.scheduler import Scheduler
-from luigi.six.moves.urllib.parse import (
-    urlencode, ParseResult, quote as urlquote
-)
+from urllib.parse import urlencode, ParseResult, quote as urlquote
 
 import tornado.ioloop
-from tornado.testing import AsyncHTTPTestCase
-from nose.plugins.attrib import attr
+from tornado.testing import AsyncHTTPTestCase as _AsyncHTTPTestCase
+_AsyncHTTPTestCase.__test__ = False  # tornado 6.2 compat: prevent pytest collecting tornado's base class
+# nose uses removed 'imp' module in Python 3.12, use helpers.attr instead
+from helpers import attr
 
 try:
     from unittest import mock
@@ -55,7 +55,11 @@ def _is_running_from_main_thread():
     return tornado.ioloop.IOLoop.current(instance=False)
 
 
-class ServerTestBase(AsyncHTTPTestCase):
+class ServerTestBase(_AsyncHTTPTestCase):
+    __test__ = False  # prevent direct collection; concrete subclasses set __test__ = True
+
+    def runTest(self):
+        pass  # tornado 6.2 compat: __init__ wraps this via getattr; avoids AttributeError
 
     def get_app(self):
         return luigi.server.app(Scheduler())
@@ -83,6 +87,7 @@ class ServerTestBase(AsyncHTTPTestCase):
 
 
 class ServerTest(ServerTestBase):
+    __test__ = True  # override inherited False from ServerTestBase
 
     def test_visualiser(self):
         page = self.fetch('/').body
@@ -110,11 +115,12 @@ class ServerTest(ServerTestBase):
         self.assertEqual(headers["Access-Control-Allow-Origin"], "*")
 
 
-class _ServerTest(unittest.TestCase):
+class _ServerTest:
     """
-    Test to start and stop the server in a more "standard" way
+    Test to start and stop the server in a more "standard" way.
+    Mixin class - subclasses must also inherit from unittest.TestCase.
     """
-    server_client_class = "To be defined by subclasses"
+    server_client_class = None  # To be defined by subclasses
 
     def start_server(self):
         self._process = multiprocessing.Process(
@@ -153,7 +159,6 @@ class _ServerTest(unittest.TestCase):
     def test_raw_ping_extended(self):
         self.sch._request('/api/ping', {'worker': 'xyz', 'foo': 'bar'})
 
-    @skipOnTravis('https://travis-ci.org/spotify/luigi/jobs/166833694')
     def test_404(self):
         with self.assertRaises(luigi.rpc.RPCError):
             self.sch._request('/api/fdsfds', {'dummy': 1})
@@ -169,8 +174,9 @@ class _ServerTest(unittest.TestCase):
         self.assertEqual(work['task_id'], 'A')
 
 
+@unittest.skipUnless(luigi.rpc.HAS_UNIX_SOCKET, 'requests-unixsocket is not installed')
 @attr('unixsocket')
-class UNIXServerTest(_ServerTest):
+class UNIXServerTest(_ServerTest, unittest.TestCase):
     class ServerClient(object):
         def __init__(self):
             self.tempdir = tempfile.mkdtemp()
@@ -206,7 +212,8 @@ class INETServerClient(object):
         return luigi.rpc.RemoteScheduler('http://localhost:' + str(self.port))
 
 
-class _INETServerTest(_ServerTest):
+class _INETServerTest(_ServerTest, unittest.TestCase):
+    __test__ = False  # Don't run this class directly
 
     def test_with_cmdline(self):
         """

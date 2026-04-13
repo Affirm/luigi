@@ -96,7 +96,7 @@ def rpc_method(**request_args):
     def _rpc_method(fn):
         # If request args are passed, return this function again for use as
         # the decorator function with the request args attached.
-        fn_args = inspect.getargspec(fn)
+        fn_args = inspect.getfullargspec(fn)
 
         assert not fn_args.varargs
         assert fn_args.args[0] == 'self'
@@ -208,7 +208,7 @@ def _get_default(x, default):
         return default
 
 
-class OrderedSet(collections.MutableSet):
+class OrderedSet(collections.abc.MutableSet):
     """
     Standard Python OrderedSet recipe found at http://code.activestate.com/recipes/576694/
 
@@ -458,7 +458,7 @@ class SimpleTaskState(object):
     def dump(self):
         try:
             with open(self._state_path, 'wb') as fobj:
-                pickle.dump(self.get_state(), fobj)
+                pickle.dump(self.get_state(), fobj, protocol=3)
         except IOError:
             logger.warning("Failed saving scheduler state", exc_info=1)
         else:
@@ -1467,12 +1467,12 @@ class Scheduler(object):
                 name=resource,
                 num_total=r_dict['total'],
                 num_used=r_dict['used']
-            ) for resource, r_dict in six.iteritems(self.resources())]
+            ) for resource, r_dict in self.resources().items()]
         if self._resources is not None:
             consumers = collections.defaultdict(dict)
             for task in self._state.get_active_tasks_by_status(RUNNING):
                 if task.status == RUNNING and task.resources:
-                    for resource, amount in six.iteritems(task.resources):
+                    for resource, amount in task.resources.items():
                         consumers[resource][task.id] = self._serialize_task(task.id, include_deps=False)
             for resource in resources:
                 tasks = consumers[resource['name']]
@@ -1484,7 +1484,7 @@ class Scheduler(object):
         ''' get total resources and available ones '''
         used_resources = self._used_resources()
         ret = collections.defaultdict(dict)
-        for resource, total in six.iteritems(self._resources):
+        for resource, total in self._resources.items():
             ret[resource]['total'] = total
             if resource in used_resources:
                 ret[resource]['used'] = used_resources[resource]
