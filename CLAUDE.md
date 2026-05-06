@@ -166,3 +166,49 @@ twine upload --config-file .pypirc -r pypi-local dist/*
 - boto3 tests require AWS region configuration or proper mocking
 - SQLAlchemy tests need eager loading for relationships to avoid DetachedInstanceError
 - Process-related tests may need small delays for `/proc` filesystem to be ready
+
+## S3 Module: boto3-Only Default + Boto1 Legacy Shim
+
+`luigi/contrib/s3.py` defaults to boto3: `S3Client = S3ClientBoto3` (and `ReadableS3File = ReadableS3FileBoto3`). The legacy `S3ClientBoto1` class is still defined and importable for callers that need it explicitly, but boto1 is no longer a runtime dependency for the default path.
+
+`S3PathTask`, `S3EmrTask`, and `S3FlagTask` do **not** accept a `client=` constructor argument — they always use the module default. Callers needing a non-default client (e.g. region-aware boto3) should subclass and override `output()`. (A `client=` parameter was briefly added in commit `05c71137` while the default was still boto1; it was reverted on May 6 2026 once the default flipped to boto3 made it redundant.)
+
+### Running S3 Tests with uv
+
+`test/contrib/s3_test.py` is structured for one ephemeral env per Python+moto+boto combo. Use `uv run --no-project --with-editable .` and pin the moto/boto versions you want to validate:
+
+```bash
+# Modern stack — py3.12 + moto5 + boto3 (recommended)
+PYTHONPATH=test uv run --python 3.12 --no-project --with-editable . \
+  --with pytest --with sqlalchemy --with mock --with hypothesis --with pygments \
+  --with 'moto>=5,<6' --with boto3 \
+  python -m pytest test/contrib/s3_test.py -q --override-ini addopts=''
+
+# Legacy stack — py3.9 + moto1 + boto1 + boto3
+arch -x86_64 env PYTHONPATH=test uv run --python 3.9 --no-project --with-editable . \
+  --with pytest --with sqlalchemy --with mock --with hypothesis --with pygments \
+  --with 'moto==1.3.16' --with boto3 --with boto \
+  python -m pytest test/contrib/s3_test.py -q --override-ini addopts=''
+```
+
+### Compatibility matrix
+
+| Python | moto | boto1 | boto3 | Result |
+| --- | --- | --- | --- | --- |
+| 3.12 | 1.x | yes | yes | **Broken**: moto1 calls `ssl.wrap_socket` (removed in 3.12); boto1's vendored `six` also fails to import. |
+| 3.12 | ≥5  | —   | yes | **60 passed, 13 skipped** (boto1 tests skip cleanly). |
+| 3.9  | 1.x | yes | yes | **33 passed, 40 skipped** — boto1 tests run; boto3 round-trip tests skip under `MOTO_LT_2` because moto<2 mishandles boto3 chunked Transfer-Encoding. |
+| 3.9  | 1.x | —   | yes | Identical to row above — `moto==1.3.16` declares `boto` as a hard runtime dep, so boto1 is always installed transitively. |
+| 3.9  | ≥5  | —   | yes | **60 passed, 13 skipped**. |
+
+### Test gating flags
+
+Defined at the top of `test/contrib/s3_test.py`:
+
+- `MOTO_LT_2` — true if `moto.__version__` is `<2`. Skips the boto3 round-trip tests (multipart, copy, `test_get`, `test_get_as_string`, the whole `TestS3Target` class) because moto<2 corrupts uploads with raw chunk-size markers.
+- `BOTO1_AVAILABLE` — true only if both `boto<3` AND moto's `mock_s3_deprecated`/`mock_sts_deprecated` are importable (the latter exists only in moto<2). Gates `TestS3TargetBoto1` and `TestS3ClientBoto1`.
+
+### macOS / Apple Silicon notes
+
+- Python 3.9 builds available locally are x86_64 only (pyenv 3.9.18, CommandLineTools 3.9.6, uv-managed 3.9.x). On arm64 hardware, prefix py3.9 invocations with `arch -x86_64` to load the matching x86_64 wheels via Rosetta. Without it, `cryptography`'s `_cffi_backend.so` fails to load with `incompatible architecture (have 'x86_64', need 'arm64')`.
+- Python 3.12 runs natively in either arch; no prefix needed.
