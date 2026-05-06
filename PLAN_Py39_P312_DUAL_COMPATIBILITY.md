@@ -226,12 +226,13 @@ A module-level `USE_BOTO3` flag was considered but rejected: since both `boto` a
 
  **4\. Add backwards-compatible aliases** at the bottom of the module:
 
- **5\. Add** `**client**` **parameter to** `**S3PathTask**`**,** `**S3EmrTask**`**,** `**S3FlagTask**`  
-These `ExternalTask` subclasses currently hardcode no client in `output()`, always falling  
-back to the default. Add a `client` parameter (defaulting to `None`) that is forwarded to  
-the target constructor. `None` means "use the module default", which after step 4 resolves  
-to `S3ClientBoto1` — preserving existing behaviour exactly. To use boto3, the caller passes  
-`client=S3ClientBoto3()` explicitly.
+ **5\. Add** `**client**` **parameter to** `**S3PathTask**`**,** `**S3EmrTask**`**,** `**S3FlagTask**` — *Reverted May 6 2026; see the May 6 section below. Once the default flipped to boto3 in step 4, the injection plumbing became redundant for boto3 compatibility and these task classes were restored to their pre-`05c71137` form. Original April 13 rationale preserved verbatim below for historical context:*
+
+> These `ExternalTask` subclasses currently hardcode no client in `output()`, always falling
+> back to the default. Add a `client` parameter (defaulting to `None`) that is forwarded to
+> the target constructor. `None` means "use the module default", which after step 4 resolves
+> to `S3ClientBoto1` — preserving existing behaviour exactly. To use boto3, the caller passes
+> `client=S3ClientBoto3()` explicitly.
 
 Apply the same pattern to `S3EmrTask` and `S3FlagTask` (forwarding `client` and `flag`  
 where applicable).
@@ -247,21 +248,21 @@ forward `self._client` to that `S3Target` call as well.
 
 ### Key Design Note
 
-**Existing behaviour is preserved exactly.** Any code that currently works without passing a `client` continues to use boto1 — nothing changes for existing users.
+**As of May 2026 the default has flipped to boto3** — see the May 6 2026 section below. The original April 13 plan kept `S3Client = S3ClientBoto1` to preserve existing behavior; that decision was reversed once the upgrade target was clarified to "boto3-only by default, boto1 still importable for legacy paths".
 
-boto3 is strictly opt-in via explicit injection:
+Original (April 13) injection model still applies, just with the default swapped:
 
 ```python
-# existing code — unchanged, still uses boto1
+# default — now boto3
 from luigi.contrib.s3 import S3Target
 target = S3Target("s3://bucket/key")
 
-# new code opting in to boto3 — explicit at the call site
-from luigi.contrib.s3 import S3ClientBoto3, S3Target
-target = S3Target("s3://bucket/key", client=S3ClientBoto3())
+# explicit boto1 (legacy paths only — requires `boto<3` installed)
+from luigi.contrib.s3 import S3ClientBoto1, S3Target
+target = S3Target("s3://bucket/key", client=S3ClientBoto1())
 ```
 
-`S3Client` remains as an alias for `S3ClientBoto1` so that existing imports of `S3Client` continue to work without modification.
+`S3Client` remains as an alias — but now points to `S3ClientBoto3`. Code that imports `S3Client` keeps working; its underlying backend is now boto3.
 
 ---
 
@@ -389,11 +390,7 @@ class S3ClientWithRegion(S3ClientBoto3):
 `S3PathTaskWithRegion.output()` is unchanged — it still passes  
 `S3ClientWithRegion(region_name=self.region_name)` to `S3Target`.
 
-Once we add a `client` parameter to `S3PathTask` (checklist step 5), simple cases that do not need a custom region can also just pass `client=S3ClientBoto3()` at instantiation time rather than subclassing:
-
-```python
-S3PathTask(path=some_path, client=S3ClientBoto3())
-```
+*(May 6 2026 update — checklist step 5 was reverted, so `S3PathTask` no longer accepts `client=`. Simple cases get boto3 automatically via the new module default. Callers needing a non-default client must subclass and override `output()` as `S3PathTaskWithRegion` does above.)*
 
 ---
 
@@ -407,18 +404,7 @@ class NamedS3FlagTask(S3FlagTask):
     name = luigi.Parameter("A name describing the task instance")
 ```
 
-**No structural change needed.** Once we add `client` to `S3FlagTask` (checklist step 5), callers can opt in to boto3 at instantiation:
-
-```python
-from luigi.contrib.s3 import S3ClientBoto3
-
-NamedS3FlagTask(
-    name="chrono-user-views-all-offers",
-    path="s3://bucket/prefix/",
-    flag="_SUCCESS",
-    client=S3ClientBoto3(),   # new — opt-in to boto3
-)
-```
+**No structural change needed.** With the May 6 2026 default flip, `NamedS3FlagTask(...)` already uses boto3 via the module-level `S3Client = S3ClientBoto3` alias — no opt-in required. (Checklist step 5 was reverted: `S3FlagTask` does not accept a `client=` constructor argument. Callers needing a non-default client should subclass and override `output()` per Pattern 3.)
 
 ---
 
@@ -429,7 +415,7 @@ NamedS3FlagTask(
 | No client (default boto1) | ~850 | Add `client=S3ClientBoto3()` at each call site |
 | `AffirmS3Client` injected | ~50 | Swap `AffirmS3Client` → `S3ClientBoto3` at injection site; audit any custom methods |
 | `S3PathTaskWithRegion` | ~20 | In `S3ClientWithRegion`: change base class to `S3ClientBoto3`, remove boto1 `s3` property override, forward `region_name` via `super().__init__()` kwargs; `S3PathTaskWithRegion.output()` unchanged |
-| `NamedS3FlagTask` | ~10 | Pass `client=S3ClientBoto3()` at instantiation once step 5 is complete |
+| `NamedS3FlagTask` | ~10 | None — picks up boto3 automatically from the module default after May 6 2026 |
 
 All changes are localised to the call site. No structural refactoring is required.
 
@@ -456,8 +442,47 @@ class S3PathTask(ExternalTask):
 ```
 
 ```python
-# S3Client keeps the existing default — boto1, same as today.
-# To use boto3, pass client=S3ClientBoto3() explicitly at the call site.
-S3Client = S3ClientBoto1
-ReadableS3File = ReadableS3FileBoto1
+# Default flipped to boto3 in May 2026 (BATCH-3679 boto3-only upgrade).
+# To use boto1, pass client=S3ClientBoto1() explicitly at the call site
+# (and ensure `boto<3` is installed — boto1 does not import on Py3.12).
+S3Client = S3ClientBoto3
+ReadableS3File = ReadableS3FileBoto3
 ```
+
+---
+
+## May 6 2026 — Boto3-Only Default + Test Refactor
+
+### S3 client default flipped to boto3
+
+`luigi/contrib/s3.py` now aliases `S3Client = S3ClientBoto3` (was `S3ClientBoto1`). Same for `ReadableS3File`. `S3ClientBoto1` is still defined and importable so legacy callers can opt back in explicitly, but the default backend for unparameterized `S3Target(...)`, `S3PathTask(...)`, etc. is now boto3.
+
+`S3ClientBoto3.__init__` was hardened to fail fast (`import boto3  # noqa: F401`) so that environments missing boto3 surface the issue at construction rather than at first method call.
+
+### `client=` constructor argument reverted on `S3PathTask` / `S3EmrTask` / `S3FlagTask`
+
+Commit `05c71137` (April 13 plan, step 5) added a `client=None` constructor parameter to `S3PathTask`, `S3EmrTask`, and `S3FlagTask` so callers could inject `S3ClientBoto3()` while the module default was still boto1. With the default now flipped to boto3, that injection plumbing is no longer needed for boto3 compatibility — these classes are back to inheriting only `path` (and `flag` for `S3FlagTask`) and a one-line `output()` that constructs the target with the module default. Callers that still need a *non-default* client (e.g. region-aware boto3, or explicit boto1) should subclass and override `output()`, matching how `S3PathTaskWithRegion` works in `all-the-things` (Migration Guide, Pattern 3).
+
+### `test/contrib/s3_test.py` rewritten
+
+The file previously carried a dual-mode `try/except ImportError` shim (`HAS_BOTO`, boto1-as-fallback assignment, conditional `_create_bucket`, ~12 `@unittest.skipIf(not HAS_BOTO, ...)` decorators on boto1-only behaviors). With the default now being boto3 unconditionally, that shim was incorrect: when boto1 *is* installed `HAS_BOTO=True` would route boto1-style calls (`client.s3.create_bucket('mybucket')`) into a boto3 client.
+
+The refactor:
+
+*   **Removed** the dual-mode shim entirely — `boto3`, `botocore.exceptions.ClientError`, and `S3Client` are imported unconditionally; `_create_bucket` always uses `boto3.resource('s3', region_name='us-east-1').create_bucket(Bucket=...)`.
+*   **Added boto3 versions** of the previously-skipped tests, using boto3 idioms: `ServerSideEncryption='AES256'` instead of `encrypt_key=True`; credentials introspected via `s3.meta.client._request_signer._credentials` instead of boto1's `s3.access_key`/`s3.gs_access_key_id`; STS-assumed-role assertions check shape (`ASIA`-prefixed key + token populated) rather than the canonical example values that newer moto no longer returns.
+*   **Added boto1-gated test classes** — `TestS3TargetBoto1` and `TestS3ClientBoto1` exercise `S3ClientBoto1`/`ReadableS3FileBoto1` directly (basic put/get round-trip, the original `boto.s3.key.Key.BufferSize` line-buffering test, boto1 credential introspection, all four `encrypt_key=True` multipart variants). Gated on `BOTO1_AVAILABLE = HAS_BOTO_1 and HAS_BOTO_1_MOTO` — both `boto<3` and `moto<2`'s `mock_s3_deprecated`/`mock_sts_deprecated` decorators must be importable. Skip cleanly otherwise.
+*   **Added bonus deprecation tests** — `test_put_encrypt_key_raises`, `test_put_string_encrypt_key_raises`, `test_put_multipart_encrypt_key_raises` verify `S3ClientBoto3` actively rejects the boto1 `encrypt_key=` parameter with `DeprecatedBotoClientException`.
+*   **Added a `MOTO_LT_2` skip gate** — `moto<2` doesn't decode boto3's `Transfer-Encoding: chunked` upload bodies, so any round-trip through `put_multipart` / `upload_fileobj` / `copy` stores chunk-size markers (`b"4f\n...real-data...\n0\n"`) instead of real content. The class-level `@unittest.skipIf(MOTO_LT_2, ...)` on `TestS3Target` plus `self.skipTest(...)` guards inside `_run_multipart_test` / `_run_copy_test` / `_run_multipart_copy_test`, plus `@unittest.skipIf` on `test_get` / `test_get_as_string`, route around this without false failures.
+
+### Test matrix validated under uv
+
+| Scenario | Result |
+| --- | --- |
+| py3.12 + moto1 + boto + boto3 | Broken environment — moto1's vendored httpretty calls `ssl.wrap_socket` (removed in py3.12) and boto1's vendored `six.moves` is incompatible with py3.12. Cannot run; documented for posterity. |
+| py3.12 + moto5 + boto3 | **60 passed, 13 skipped, 0 failed** |
+| py3.9 + moto1 + boto + boto3 | **33 passed, 40 skipped, 0 failed** (boto3 round-trip path skipped under MOTO_LT_2) |
+| py3.9 + moto1 + boto3 (no boto) | Same as above — moto1 declares `boto` as a hard runtime dep, so boto1 is always installed transitively. Configuration is empirically unachievable. |
+| py3.9 + moto5 + boto3 | **60 passed, 13 skipped, 0 failed** |
+
+Run any scenario via `uv run --no-project` — see `CLAUDE.md` "Running S3 Tests with uv" for exact commands.

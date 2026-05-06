@@ -669,162 +669,6 @@ class S3ClientBoto1(FileSystem):
         return key if key[-1:] == '/' or key == '' else key + '/'
 
 
-class AtomicS3File(AtomicLocalFile):
-    """
-    An S3 file that writes to a temp file and puts to S3 on close.
-
-    :param kwargs: Keyword arguments are passed to the boto function `initiate_multipart_upload`
-    """
-
-    def __init__(self, path, s3_client, **kwargs):
-        self.s3_client = s3_client
-        super(AtomicS3File, self).__init__(path)
-        self.s3_options = kwargs
-
-    def move_to_final_destination(self):
-        self.s3_client.put_multipart(self.tmp_path, self.path, **self.s3_options)
-
-
-class S3Target(FileSystemTarget):
-    """
-    Target S3 file object
-
-    :param kwargs: Keyword arguments are passed to the boto function `initiate_multipart_upload`
-    """
-
-    fs = None
-
-    def __init__(self, path, format=None, client=None, **kwargs):
-        super(S3Target, self).__init__(path)
-        if format is None:
-            format = get_default_format()
-
-        self.path = path
-        self.format = format
-        self.fs = client or S3Client()
-        self.s3_options = kwargs
-
-    def open(self, mode='r'):
-        if mode not in ('r', 'w'):
-            raise ValueError("Unsupported open mode '%s'" % mode)
-
-        if mode == 'r':
-            s3_key = self.fs.get_key(self.path)
-            if not s3_key:
-                raise FileNotFoundException("Could not find file at %s" % self.path)
-
-            fileobj = self.fs._readable_file_cls(s3_key)
-            return self.format.pipe_reader(fileobj)
-        else:
-            return self.format.pipe_writer(AtomicS3File(self.path, self.fs, **self.s3_options))
-
-
-class S3FlagTarget(S3Target):
-    """
-    Defines a target directory with a flag-file (defaults to `_SUCCESS`) used
-    to signify job success.
-
-    This checks for two things:
-
-    * the path exists (just like the S3Target)
-    * the _SUCCESS file exists within the directory.
-
-    Because Hadoop outputs into a directory and not a single file,
-    the path is assumed to be a directory.
-
-    This is meant to be a handy alternative to AtomicS3File.
-
-    The AtomicFile approach can be burdensome for S3 since there are no directories, per se.
-
-    If we have 1,000,000 output files, then we have to rename 1,000,000 objects.
-    """
-
-    fs = None
-
-    def __init__(self, path, format=None, client=None, flag='_SUCCESS'):
-        """
-        Initializes a S3FlagTarget.
-
-        :param path: the directory where the files are stored.
-        :type path: str
-        :param format: see the luigi.format module for options
-        :type format: luigi.format.[Text|UTF8|Nop]
-        :param client:
-        :type client:
-        :param flag:
-        :type flag: str
-        """
-        if format is None:
-            format = get_default_format()
-
-        if path[-1] != "/":
-            raise ValueError("S3FlagTarget requires the path to be to a "
-                             "directory.  It must end with a slash ( / ).")
-        super(S3FlagTarget, self).__init__(path, format, client)
-        self.flag = flag
-
-    def exists(self):
-        hadoopSemaphore = self.path + self.flag
-        return self.fs.exists(hadoopSemaphore)
-
-
-class S3EmrTarget(S3FlagTarget):
-    """
-    Deprecated. Use :py:class:`S3FlagTarget`
-    """
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn("S3EmrTarget is deprecated. Please use S3FlagTarget")
-        super(S3EmrTarget, self).__init__(*args, **kwargs)
-
-
-class S3PathTask(ExternalTask):
-    """
-    A external task that to require existence of a path in S3.
-    """
-    path = Parameter()
-
-    def __init__(self, *args, client=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._client = client
-
-    def output(self):
-        return S3Target(self.path, client=self._client)
-
-
-class S3EmrTask(ExternalTask):
-    """
-    An external task that requires the existence of EMR output in S3.
-    """
-    path = Parameter()
-
-    def __init__(self, *args, client=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._client = client
-
-    def output(self):
-        return S3EmrTarget(self.path, client=self._client)
-
-
-class S3FlagTask(ExternalTask):
-    """
-    An external task that requires the existence of EMR output in S3.
-    """
-    path = Parameter()
-    flag = OptionalParameter(default=None)
-
-    def __init__(self, *args, client=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._client = client
-
-    def output(self):
-        return S3FlagTarget(self.path, flag=self.flag, client=self._client)
-
-
-class DeprecatedBotoClientException(Exception):
-    pass
-
-
 class _StreamingBodyAdaptor(_io.IOBase):
     """
     Adapter class wrapping botocore's StreamingBody to make a file-like iterable.
@@ -1229,7 +1073,150 @@ class S3ClientBoto3(FileSystem):
         return True
 
 
-# Backwards-compatible aliases — preserve existing default behaviour (boto1).
-# To use boto3 explicitly, import S3ClientBoto3 directly and pass it as client=.
-S3Client = S3ClientBoto1
-ReadableS3File = ReadableS3FileBoto1
+# Aliases for backwards compatibility
+S3Client = S3ClientBoto3
+ReadableS3File = ReadableS3FileBoto3
+
+
+class AtomicS3File(AtomicLocalFile):
+    """
+    An S3 file that writes to a temp file and puts to S3 on close.
+
+    :param kwargs: Keyword arguments are passed to the boto function `initiate_multipart_upload`
+    """
+
+    def __init__(self, path, s3_client, **kwargs):
+        self.s3_client = s3_client
+        super(AtomicS3File, self).__init__(path)
+        self.s3_options = kwargs
+
+    def move_to_final_destination(self):
+        self.s3_client.put_multipart(self.tmp_path, self.path, **self.s3_options)
+
+
+class S3Target(FileSystemTarget):
+    """
+    Target S3 file object
+
+    :param kwargs: Keyword arguments are passed to the boto function `initiate_multipart_upload`
+    """
+
+    fs = None
+
+    def __init__(self, path, format=None, client=None, **kwargs):
+        super(S3Target, self).__init__(path)
+        if format is None:
+            format = get_default_format()
+
+        self.path = path
+        self.format = format
+        self.fs = client or S3Client()
+        self.s3_options = kwargs
+
+    def open(self, mode='r'):
+        if mode not in ('r', 'w'):
+            raise ValueError("Unsupported open mode '%s'" % mode)
+
+        if mode == 'r':
+            s3_key = self.fs.get_key(self.path)
+            if not s3_key:
+                raise FileNotFoundException("Could not find file at %s" % self.path)
+
+            fileobj = self.fs._readable_file_cls(s3_key)
+            return self.format.pipe_reader(fileobj)
+        else:
+            return self.format.pipe_writer(AtomicS3File(self.path, self.fs, **self.s3_options))
+
+
+class S3FlagTarget(S3Target):
+    """
+    Defines a target directory with a flag-file (defaults to `_SUCCESS`) used
+    to signify job success.
+
+    This checks for two things:
+
+    * the path exists (just like the S3Target)
+    * the _SUCCESS file exists within the directory.
+
+    Because Hadoop outputs into a directory and not a single file,
+    the path is assumed to be a directory.
+
+    This is meant to be a handy alternative to AtomicS3File.
+
+    The AtomicFile approach can be burdensome for S3 since there are no directories, per se.
+
+    If we have 1,000,000 output files, then we have to rename 1,000,000 objects.
+    """
+
+    fs = None
+
+    def __init__(self, path, format=None, client=None, flag='_SUCCESS'):
+        """
+        Initializes a S3FlagTarget.
+
+        :param path: the directory where the files are stored.
+        :type path: str
+        :param format: see the luigi.format module for options
+        :type format: luigi.format.[Text|UTF8|Nop]
+        :param client:
+        :type client:
+        :param flag:
+        :type flag: str
+        """
+        if format is None:
+            format = get_default_format()
+
+        if path[-1] != "/":
+            raise ValueError("S3FlagTarget requires the path to be to a "
+                             "directory.  It must end with a slash ( / ).")
+        super(S3FlagTarget, self).__init__(path, format, client)
+        self.flag = flag
+
+    def exists(self):
+        hadoopSemaphore = self.path + self.flag
+        return self.fs.exists(hadoopSemaphore)
+
+
+class S3EmrTarget(S3FlagTarget):
+    """
+    Deprecated. Use :py:class:`S3FlagTarget`
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn("S3EmrTarget is deprecated. Please use S3FlagTarget")
+        super(S3EmrTarget, self).__init__(*args, **kwargs)
+
+
+class S3PathTask(ExternalTask):
+    """
+    A external task that to require existence of a path in S3.
+    """
+    path = Parameter()
+
+    def output(self):
+        return S3Target(self.path)
+
+
+class S3EmrTask(ExternalTask):
+    """
+    An external task that requires the existence of EMR output in S3.
+    """
+    path = Parameter()
+
+    def output(self):
+        return S3EmrTarget(self.path)
+
+
+class S3FlagTask(ExternalTask):
+    """
+    An external task that requires the existence of EMR output in S3.
+    """
+    path = Parameter()
+    flag = OptionalParameter(default=None)
+
+    def output(self):
+        return S3FlagTarget(self.path, flag=self.flag)
+
+
+class DeprecatedBotoClientException(Exception):
+    pass
