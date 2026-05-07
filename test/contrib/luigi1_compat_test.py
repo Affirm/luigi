@@ -74,10 +74,17 @@ class TestLuigi1CompatFlag(unittest.TestCase):
         self.assertIsInstance(compat.IS_LUIGI1_DEPRECATED, bool)
 
     def test_flag_true_when_luigi1_unimportable(self):
-        # In the dev/CI env luigi1 is not installed. Make sure we evaluate the
-        # flag against that clean state.
+        # Force ``import luigi1`` to fail with ImportError regardless of
+        # whether luigi1 is genuinely installed on disk in this env. Just
+        # popping ``sys.modules['luigi1']`` is not enough when luigi1 is
+        # available — Python would re-import it from disk during reload.
         sys.modules.pop('luigi1', None)
-        compat = _force_reimport_compat()
+        finder = _RaiseOnImportFinder('luigi1', ImportError('luigi1 blocked by test'))
+        sys.meta_path.insert(0, finder)
+        try:
+            compat = _force_reimport_compat()
+        finally:
+            sys.meta_path.remove(finder)
         self.assertTrue(
             compat.IS_LUIGI1_DEPRECATED,
             "expected IS_LUIGI1_DEPRECATED == True when luigi1 cannot be imported",

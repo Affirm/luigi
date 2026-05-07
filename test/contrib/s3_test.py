@@ -83,11 +83,29 @@ BOTO1_RUNNABLE = USING_BOTO1 and HAS_BOTO_PKG
 # must skip in that degenerate case.
 S3CLIENT_INSTANTIABLE = HAS_BOTO_PKG if USING_BOTO1 else True
 
-try:
-    from moto import mock_s3, mock_sts
-except ImportError:
-    # moto >= 4.0 renamed mock_s3/mock_sts to mock_aws
-    from moto import mock_aws as mock_s3, mock_aws as mock_sts
+if USING_BOTO1:
+    # boto1 makes HTTP calls via raw `http.client.HTTPSConnection`, which
+    # is not intercepted by the `responses` library that powers moto 1.x's
+    # default `mock_s3`. moto 1.x kept a separate HTTPretty-backed pair,
+    # `mock_s3_deprecated` / `mock_sts_deprecated`, that patches at the
+    # socket level and therefore catches boto1 traffic. moto 4+ dropped
+    # this entirely and no longer mocks boto1 at all (see the comment in
+    # run_tests.sh).
+    try:
+        from moto import mock_s3_deprecated as mock_s3, mock_sts_deprecated as mock_sts
+    except ImportError:
+        # No deprecated path on this moto. Best effort — the boto1 tests
+        # will leak to real AWS in this combo.
+        try:
+            from moto import mock_s3, mock_sts
+        except ImportError:
+            from moto import mock_aws as mock_s3, mock_aws as mock_sts
+else:
+    try:
+        from moto import mock_s3, mock_sts
+    except ImportError:
+        # moto >= 5.0 renamed mock_s3 / mock_sts to mock_aws
+        from moto import mock_aws as mock_s3, mock_aws as mock_sts
 
 if (3, 4, 0) <= sys.version_info[:3] < (3, 4, 3):
     # spulec/moto#308
@@ -239,8 +257,15 @@ class TestS3Client(unittest.TestCase):
     @with_config({'s3': {'aws_role_arn': 'role', 'aws_role_session_name': 'name'}})
     def test_init_with_config_and_roles(self):
         s3_client = S3Client()
-        self.assertEqual(s3_client.s3.access_key, 'AKIAIOSFODNN7EXAMPLE')
-        self.assertEqual(s3_client.s3.secret_key, 'aJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY')
+        # The intent is that credentials came from `assume_role`, not from
+        # the kwargs. moto's STS mock returns temporary credentials whose
+        # access keys begin with the AWS-canonical "ASIA" prefix; secret
+        # keys are opaque, so we just check non-empty.
+        self.assertTrue(
+            s3_client.s3.access_key.startswith('ASIA'),
+            'expected STS temp-credential prefix; got %r' % s3_client.s3.access_key,
+        )
+        self.assertTrue(s3_client.s3.secret_key)
 
     def test_put(self):
         s3_client = S3Client(AWS_ACCESS_KEY, AWS_SECRET_KEY)
@@ -648,6 +673,20 @@ class TestFlagDrivenS3Dispatch(unittest.TestCase):
         target = S3Target('s3://mybucket/key', client=cross_stack)
         self.assertIs(target.fs, cross_stack)
         self.assertIsInstance(target.fs, other_cls)
+
+    @unittest.skipUnless(IS_LUIGI1_DEPRECATED,
+                         'flag is False in this env; pin the flag-True case via a uv scenario without luigi1')
+    def test_s3_target_default_fs_is_boto3_when_flag_true(self):
+        target = S3Target('s3://mybucket/key')
+        self.assertIsInstance(target.fs, S3ClientBoto3)
+        self.assertNotIsInstance(target.fs, S3ClientBoto1)
+
+    @unittest.skipUnless(not IS_LUIGI1_DEPRECATED and HAS_BOTO_PKG,
+                         'flag is True or boto package is missing; pin the flag-False case via a uv scenario with luigi1 + boto')
+    def test_s3_target_default_fs_is_boto1_when_flag_false(self):
+        target = S3Target('s3://mybucket/key')
+        self.assertIsInstance(target.fs, S3ClientBoto1)
+        self.assertNotIsInstance(target.fs, S3ClientBoto3)
 
     def test_aliases_flip_when_flag_flipped(self):
         # Reload luigi.contrib.s3 with luigi1 forcibly importable (flag → False)

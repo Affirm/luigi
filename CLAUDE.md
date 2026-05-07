@@ -151,7 +151,20 @@ cleanup is optional, not forced.
   uses the flag-resolved class, explicit `client=` overrides the default
   (same-stack always; cross-stack when both backing packages are installed),
   and the aliases flip in both directions when the flag is flipped via
-  `importlib.reload`.
+  `importlib.reload`. Two simple, hermetic tests pin the literal class
+  identity of `S3Target('s3://...').fs` for each flag value — each is gated
+  on whether the env naturally has the flag in that state, so coverage of
+  both directions comes from running under two different `uv` scenarios:
+  - `test_s3_target_default_fs_is_boto3_when_flag_true` —
+    `@unittest.skipUnless(IS_LUIGI1_DEPRECATED, ...)`. Constructs
+    `S3Target('s3://...')` with no `client=` and asserts `target.fs` is
+    an `S3ClientBoto3` (and **not** an `S3ClientBoto1`). Runs in any
+    scenario without `luigi1` installed (e.g. scenarios 2, 3, 4, 5).
+  - `test_s3_target_default_fs_is_boto1_when_flag_false` —
+    `@unittest.skipUnless(not IS_LUIGI1_DEPRECATED and HAS_BOTO_PKG, ...)`.
+    Same construction, asserts `target.fs` is an `S3ClientBoto1` (and
+    **not** an `S3ClientBoto3`). Runs in scenarios with `luigi1` and
+    `boto` installed (e.g. scenario 6).
 * The legacy `try: import boto / HAS_BOTO` setup at the top of `s3_test.py`
   is replaced by:
   - `USING_BOTO1 = S3Client is S3ClientBoto1` — does the flag point at the boto1 stack?
