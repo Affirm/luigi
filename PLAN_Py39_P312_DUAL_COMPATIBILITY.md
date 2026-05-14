@@ -21,7 +21,7 @@ All changes in PR #28 use standard Python 3 APIs available since Python 3.3. Non
 | `importlib.resources.files` | `server.py` | Python 3.9 |
 | `LuigiRunResult.worker` attribute access | `retcodes.py` | N/A — logic change |
 | `tornado>=6.0,<7` | `setup.py` | Supports Python 3.6+ |
-| `urllib3>=2.0` | `setup.py` | Supports Python 3.8+ |
+| `urllib3>=1.25.9` | `setup.py` | Supports Python 3.5+; lenient lower bound — DTs choose their own pin |
 
 ---
 
@@ -149,7 +149,7 @@ This branch was cut from `2.7.5.affirm.1.4.9` instead of `2.7.5+affirm.1.4.7`. T
 #### Dependency version constraints
 
 *   `tornado>=6.0,<7` — verified: `6.5.5` installed and working on Py312
-*   `urllib3>=2.0` — verified: `2.6.3` installed and working on Py312
+*   `urllib3>=1.25.9` — lenient lower bound. Py312 itself only requires `urllib3>=1.21.1` to run; we set `>=1.25.9` to match the minimum that `requests>=2.31` resolves cleanly against. Pinning `>=2.0` was rejected because forcing DTs to bump urllib3 across the fleet is out of scope for this package — each DT decides its own urllib3 pin. Verified `2.6.3` installs and works on Py312; older 1.26.x also resolves.
 *   `setuptools>=68` and `packaging>=23` — verified: `setuptools 82.0.1`, `packaging 26.0` on Py312
 *   Confirm all of the above install correctly on Py39 environments used by DTs — verified via `.venv39` (pyenv 3.9.18): `tornado 6.5.5`, `urllib3 2.6.3`, `setuptools 82.0.1`, `packaging 26.0` all install and import cleanly
 

@@ -42,7 +42,7 @@ install_requires = [
     'tornado>=6.0 ; python_version >= "3.12"',
     'python-daemon<3.0',
     'requests>=2.31 ; python_version >= "3.12"',
-    'urllib3>=2.0 ; python_version >= "3.12"',
+    'urllib3>=1.25.9 ; python_version >= "3.12"',
     'setuptools>=68 ; python_version >= "3.12"',
     'packaging>=23 ; python_version >= "3.12"',
     'enum34>1.1.0 ; python_version < "3.4"'
@@ -57,7 +57,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
 
 setup(
     name='luigi',
-    version='2.7.5+affirm.1.4.9.rc10',
+    version='2.7.5+affirm.1.4.9.rc11',
     description='Workflow mgmgt + task scheduling + dependency resolution',
     long_description=long_description,
     author='The Luigi Authors',

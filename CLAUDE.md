@@ -98,6 +98,44 @@ python -m pytest test/ --ignore=test/contrib/mysqldb_test.py --ignore=test/visua
 - External `six` package (e.g. `from six.moves.urllib...`) → native `urllib.*` (Python 3.0+)
 - `six.PY3` checks can be removed entirely — always `True` on any supported Python 3.x
 
+### Py312 Dependency Constraints in `setup.py`
+
+The Py312 markers in `install_requires` (`; python_version >= "3.12"`) exist so the published wheel resolves cleanly on Py312 *without* forcing Py39 DTs to bump anything. Keep the lower bounds as lenient as possible — this package does not own the dependency pins of downstream DTs.
+
+- `tornado>=6.0` — Py312 dropped support for tornado 5.x's `asyncio` shim.
+- `requests>=2.31` — first release that ships Py312 wheels.
+- `urllib3>=1.25.9` — **lenient on purpose at the resolver level**. `1.25.9` is the minimum that `requests>=2.31` resolves against. Do **not** bump this to `>=2.0` — forcing DTs to take urllib3 2.x across the fleet is out of scope for luigi; each DT decides its own urllib3 pin (e.g. via its own `requirements.txt`).
+  - **Caveat — the importable minimum on Py312 is actually `1.26.5`, not `1.25.9`.** All urllib3 1.25.x and 1.26.0–1.26.4 releases bundle `urllib3.packages.six.moves`, which crashes at `import urllib3` time on Py312 with `ModuleNotFoundError: No module named 'urllib3.packages.six.moves'` (Py312's hardened import system rejects the lazy-stub trick the bundled `six` uses). Bisected on 2026-05-14 against `--python 3.12` via `uv run`: `1.25.10`/`1.26.0`/`1.26.1`/`1.26.3`/`1.26.4` all fail to import; `1.26.5` is the first version that imports cleanly (urllib3 1.26.5 release notes: "Removed dependencies on `six`"). The marker is left at `>=1.25.9` deliberately — bumping the floor to `1.26.5` would force every DT to re-resolve urllib3, which is exactly what the lenient-marker policy is trying to avoid. DTs that actually run on Py312 are expected to pin `urllib3>=1.26.5` themselves (most already do, transitively, via `requests>=2.31` → modern `botocore` → `urllib3>=1.26.5`). If a DT ever resolves a Py312 install to urllib3 in `[1.25.9, 1.26.5)`, that's a DT-side resolver bug, not a luigi bug.
+- `setuptools>=68`, `packaging>=23` — needed by Py312 build / metadata tooling.
+
+When in doubt, set the Py312 lower bound to the *minimum* version that imports and runs on Py312, not the latest available.
+
+### Latent bug: `luigi/rpc.py` `HAS_REQUESTS=False` branch is unreachable
+
+`luigi/rpc.py:39-46` wraps the `requests` import in a `try/except ImportError` and sets `HAS_REQUESTS=False` on failure:
+
+```python
+try:
+    import requests_unixsocket as requests
+except Exception:
+    HAS_UNIX_SOCKET = False
+    try:
+        import requests
+    except ImportError:
+        HAS_REQUESTS = False
+```
+
+…but then unconditionally references `requests.adapters.HTTPAdapter` at module scope a few lines later:
+
+```python
+class BobaPKIHTTPAdapter(requests.adapters.HTTPAdapter):
+    ...
+```
+
+If `requests` actually fails to import (e.g. because the *installed* `urllib3` doesn't import on Py312 — see urllib3 caveat above), `HAS_REQUESTS` is set to `False` but the class definition still runs and crashes the entire `import luigi` with `NameError: name 'requests' is not defined`. The `HAS_REQUESTS` flag is therefore dead state — `luigi` cannot actually be imported without `requests`.
+
+This is **not** worth fixing reactively (luigi has hard-required `requests` for years; nobody installs it without `requests`). The bug only surfaces in pathological scenarios like "Py312 + `urllib3==1.25.10` (resolves but doesn't import) → `requests` import fails silently → luigi import dies on the unrelated `BobaPKIHTTPAdapter` line, masking the real urllib3 problem". Documented here so the next person who hits a confusing `NameError: name 'requests' is not defined` on Py312 doesn't waste time chasing a phantom — the real fault is almost certainly upstream of `requests` (urllib3, charset_normalizer, idna, certifi, etc.). Fix: either drop the dead `try/except` (luigi-side), or pin a known-importable `urllib3` (env-side).
+
 ### `IS_LUIGI1_DEPRECATED` flag (boto1 ↔ boto3 dispatch)
 
 `luigi/contrib/_luigi1_compat.py` exposes a single private flag:
