@@ -98,6 +98,133 @@ python -m pytest test/ --ignore=test/contrib/mysqldb_test.py --ignore=test/visua
 - External `six` package (e.g. `from six.moves.urllib...`) → native `urllib.*` (Python 3.0+)
 - `six.PY3` checks can be removed entirely — always `True` on any supported Python 3.x
 
+### Py312 Dependency Constraints in `setup.py`
+
+The Py312 markers in `install_requires` (`; python_version >= "3.12"`) exist so the published wheel resolves cleanly on Py312 *without* forcing Py39 DTs to bump anything. Keep the lower bounds as lenient as possible — this package does not own the dependency pins of downstream DTs.
+
+- `tornado>=6.0` — Py312 dropped support for tornado 5.x's `asyncio` shim.
+- `requests>=2.31` — first release that ships Py312 wheels.
+- `urllib3>=1.25.9` — **lenient on purpose at the resolver level**. `1.25.9` is the minimum that `requests>=2.31` resolves against. Do **not** bump this to `>=2.0` — forcing DTs to take urllib3 2.x across the fleet is out of scope for luigi; each DT decides its own urllib3 pin (e.g. via its own `requirements.txt`).
+  - **Caveat — the importable minimum on Py312 is actually `1.26.5`, not `1.25.9`.** All urllib3 1.25.x and 1.26.0–1.26.4 releases bundle `urllib3.packages.six.moves`, which crashes at `import urllib3` time on Py312 with `ModuleNotFoundError: No module named 'urllib3.packages.six.moves'` (Py312's hardened import system rejects the lazy-stub trick the bundled `six` uses). Bisected on 2026-05-14 against `--python 3.12` via `uv run`: `1.25.10`/`1.26.0`/`1.26.1`/`1.26.3`/`1.26.4` all fail to import; `1.26.5` is the first version that imports cleanly (urllib3 1.26.5 release notes: "Removed dependencies on `six`"). The marker is left at `>=1.25.9` deliberately — bumping the floor to `1.26.5` would force every DT to re-resolve urllib3, which is exactly what the lenient-marker policy is trying to avoid. DTs that actually run on Py312 are expected to pin `urllib3>=1.26.5` themselves (most already do, transitively, via `requests>=2.31` → modern `botocore` → `urllib3>=1.26.5`). If a DT ever resolves a Py312 install to urllib3 in `[1.25.9, 1.26.5)`, that's a DT-side resolver bug, not a luigi bug.
+- `setuptools>=68`, `packaging>=23` — needed by Py312 build / metadata tooling.
+
+When in doubt, set the Py312 lower bound to the *minimum* version that imports and runs on Py312, not the latest available.
+
+### Latent bug: `luigi/rpc.py` `HAS_REQUESTS=False` branch is unreachable
+
+`luigi/rpc.py:39-46` wraps the `requests` import in a `try/except ImportError` and sets `HAS_REQUESTS=False` on failure:
+
+```python
+try:
+    import requests_unixsocket as requests
+except Exception:
+    HAS_UNIX_SOCKET = False
+    try:
+        import requests
+    except ImportError:
+        HAS_REQUESTS = False
+```
+
+…but then unconditionally references `requests.adapters.HTTPAdapter` at module scope a few lines later:
+
+```python
+class BobaPKIHTTPAdapter(requests.adapters.HTTPAdapter):
+    ...
+```
+
+If `requests` actually fails to import (e.g. because the *installed* `urllib3` doesn't import on Py312 — see urllib3 caveat above), `HAS_REQUESTS` is set to `False` but the class definition still runs and crashes the entire `import luigi` with `NameError: name 'requests' is not defined`. The `HAS_REQUESTS` flag is therefore dead state — `luigi` cannot actually be imported without `requests`.
+
+This is **not** worth fixing reactively (luigi has hard-required `requests` for years; nobody installs it without `requests`). The bug only surfaces in pathological scenarios like "Py312 + `urllib3==1.25.10` (resolves but doesn't import) → `requests` import fails silently → luigi import dies on the unrelated `BobaPKIHTTPAdapter` line, masking the real urllib3 problem". Documented here so the next person who hits a confusing `NameError: name 'requests' is not defined` on Py312 doesn't waste time chasing a phantom — the real fault is almost certainly upstream of `requests` (urllib3, charset_normalizer, idna, certifi, etc.). Fix: either drop the dead `try/except` (luigi-side), or pin a known-importable `urllib3` (env-side).
+
+### `IS_LUIGI1_DEPRECATED` flag (boto1 ↔ boto3 dispatch)
+
+`luigi/contrib/_luigi1_compat.py` exposes a single private flag:
+
+- `IS_LUIGI1_DEPRECATED is True`  → `import luigi1` raised. The legacy stack is
+  gone, so default to **boto3**.
+- `IS_LUIGI1_DEPRECATED is False` → `luigi1` imported cleanly. Keep using the
+  legacy **boto1** stack for backwards compatibility.
+
+`luigi/contrib/s3.py` consumes the flag to bind the public aliases:
+
+```python
+if IS_LUIGI1_DEPRECATED:
+    S3Client = S3ClientBoto3
+    ReadableS3File = ReadableS3FileBoto3
+else:
+    S3Client = S3ClientBoto1
+    ReadableS3File = ReadableS3FileBoto1
+```
+
+Because `S3Target.__init__` (and the other `client=`-accepting classes —
+`S3FlagTarget`, `S3PathTask`, `S3EmrTask`, `S3FlagTask`) fall back to
+`S3Client()` when no client is injected, this single dispatch propagates
+through the whole S3 surface. Callers that need to pin a specific stack
+should import `S3ClientBoto1` / `S3ClientBoto3` (or `ReadableS3FileBoto1` /
+`ReadableS3FileBoto3`) directly and pass the client via `client=`.
+
+The flag is evaluated once at module-import time. Modules that branch on it
+must be re-imported (or the process restarted) if `luigi1` is added or
+removed at runtime.
+
+The `client=` kwarg on `S3PathTask` / `S3EmrTask` / `S3FlagTask` (added in
+commit `05c71137` to allow boto3 opt-in) stays. The flag covers the *default*
+dispatch; the kwarg covers *explicit* injection — pinning a stack against the
+env default, passing custom-credentialled or moto-mocked clients, and
+supporting `RedshiftManifestTask`, which forwards `self._client` to its inner
+`S3Target`. Downstream callers that previously passed `client=S3ClientBoto3()`
+purely to opt into boto3 may drop that argument once `luigi1` is gone — that
+cleanup is optional, not forced.
+
+#### Tests for the flag
+
+* `test/contrib/luigi1_compat_test.py` — exercises all three branches of the
+  flag's contract: importable (False), unimportable (True via `ImportError`),
+  and importable-but-raises (True via non-`ImportError`). Uses
+  `sys.modules` stubbing and a custom `sys.meta_path` finder; cleans up in
+  `tearDown` so the rest of the suite sees the real flag.
+* `test/contrib/s3_test.py::TestFlagDrivenS3Dispatch` — pins the dispatch
+  contract: `S3Client` / `ReadableS3File` aliases match the flag, default
+  client injection in `S3Target` / `S3PathTask` / `S3EmrTask` / `S3FlagTask`
+  uses the flag-resolved class, explicit `client=` overrides the default
+  (same-stack always; cross-stack when both backing packages are installed),
+  and the aliases flip in both directions when the flag is flipped via
+  `importlib.reload`. Two simple, hermetic tests pin the literal class
+  identity of `S3Target('s3://...').fs` for each flag value — each is gated
+  on whether the env naturally has the flag in that state, so coverage of
+  both directions comes from running under two different `uv` scenarios:
+  - `test_s3_target_default_fs_is_boto3_when_flag_true` —
+    `@unittest.skipUnless(IS_LUIGI1_DEPRECATED, ...)`. Constructs
+    `S3Target('s3://...')` with no `client=` and asserts `target.fs` is
+    an `S3ClientBoto3` (and **not** an `S3ClientBoto1`). Runs in any
+    scenario without `luigi1` installed (e.g. scenarios 2, 3, 4, 5).
+  - `test_s3_target_default_fs_is_boto1_when_flag_false` —
+    `@unittest.skipUnless(not IS_LUIGI1_DEPRECATED and HAS_BOTO_PKG, ...)`.
+    Same construction, asserts `target.fs` is an `S3ClientBoto1` (and
+    **not** an `S3ClientBoto3`). Runs in scenarios with `luigi1` and
+    `boto` installed (e.g. scenario 6).
+* The legacy `try: import boto / HAS_BOTO` setup at the top of `s3_test.py`
+  is replaced by:
+  - `USING_BOTO1 = S3Client is S3ClientBoto1` — does the flag point at the boto1 stack?
+  - `HAS_BOTO_PKG` — is the `boto` package importable?
+  - `BOTO1_RUNNABLE = USING_BOTO1 and HAS_BOTO_PKG` — used by the existing skip decorators (renamed from `not HAS_BOTO` to `not BOTO1_RUNNABLE`, same semantics).
+  - `S3CLIENT_INSTANTIABLE = HAS_BOTO_PKG if USING_BOTO1 else True` — used as a class-level `@unittest.skipUnless(...)` on `TestS3Target` and `TestS3Client`, and per-test on the dispatch tests that construct `S3Client()`. This handles the degenerate config where `luigi1` is installed (flag flips to False, so `S3Client = S3ClientBoto1`) but `boto` is missing — `S3ClientBoto1.__init__` would raise `ModuleNotFoundError`. We skip rather than fail.
+  - `S3ResponseError` is bound to `boto.exception.S3ResponseError` only when `BOTO1_RUNNABLE`; otherwise to `botocore.exceptions.ClientError`. This must follow the *active* stack, not just the *availability* of `boto` — boto can be on path while the flag still selects boto3, in which case errors come from botocore.
+
+#### Scenario matrix (`uv run --no-project --with-editable . ...`)
+
+| # | Python | Stack | luigi1 | Result |
+|---|--------|-------|--------|--------|
+| 1 | 3.12 | boto + boto3 + moto1 | no | **install fails** — `boto@2.49.0+affirm0` is not py3.12-compatible (`boto.vendored.six.moves` ModuleNotFoundError during build) |
+| 2 | 3.12 | boto3 + moto5 | no | 54 pass, 13 skip |
+| 3 | 3.9 | boto + boto3 + moto1 | no | 55 pass, 12 skip (cross-stack override runs because boto1 is instantiable) |
+| 4 | 3.9 | boto3 + moto1 | no | 55 pass, 12 skip — but `moto==1.3.14` transitively requires `boto`, so this collapses to scenario 3 |
+| 5 | 3.9 | boto3 + moto5 | no | 54 pass, 13 skip |
+| 6 | 3.9 | boto + boto3 + moto1 | yes | 11 pass, 56 fail — `moto==1.3.14` does not intercept boto1's HTTP calls in this combo, so requests hit real AWS and return `InvalidAccessKeyId`. **Pre-existing test infra issue**, documented by `run_tests.sh` ("s3_test.py uses boto (SigV2) which moto v4+ no longer mocks; skip on Py39"). Not caused by the flag work. |
+| 7 | 3.9 | boto3 + moto5 + luigi1 | yes | 4 pass, 63 skip — degenerate config: flag selects boto1 (luigi1 is installed) but `boto` package isn't, so all S3-touching tests skip via `S3CLIENT_INSTANTIABLE`. The 4 dispatch tests that don't instantiate `S3Client` (alias identity, `_readable_file_cls` wiring, reload-based flip test) still pass. |
+
+The scenarios that should run cleanly (2, 3, 5) all do. The scenarios that should fail (1, 7) fail in informative ways — install error on py3.12 boto1, and graceful skip when the flag selects an uninstalled stack. Scenario 6's failures are pre-existing and dodged in normal CI by skipping the file.
+
 ### Known Pre-existing Test Failures (not caused by Py312 changes)
 - `test/contrib/mysqldb_test.py` — requires MySQL connector not installed in dev env
 - `test/visualiser/` — requires Selenium not installed in dev env
